@@ -199,9 +199,20 @@ async function getTokenData() {
 	return data;
 }
 
-function throwIfErr(res: Response) {
-	if (!res.ok) {
-		throw new Error(`HTTP error! status: ${res.status}`);
+export async function throwIfErr(response: Response) {
+	if (response.ok) {
+		return;
+	}
+	const errorText = `Error fetching ${response.url}: ${response.status} ${response.statusText}`;
+	throw new FetchError(errorText, response);
+}
+
+export class FetchError extends Error {
+	constructor(
+		message: string,
+		public response: Response,
+	) {
+		super(message);
 	}
 }
 
