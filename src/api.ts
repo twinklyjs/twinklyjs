@@ -17,7 +17,8 @@ export const paths = {
 	SET_LED_OPERATION_MODE: '/led/mode',
 	SET_DEVICE_NAME: '/device_name',
 	GET_MOVIES: '/movies',
-	GET_CURRENT_MOVIE: '/led/movies/current',
+	GET_CURRENT_MOVIE: '/movies/current',
+	SET_CURRENT_MOVIE: '/movies/current',
 	GET_SUMMARY: '/summary',
 	GET_LED_COLOR: '/led/color',
 };
@@ -55,9 +56,24 @@ export async function getSummary() {
 export async function getCurrentMovie() {
 	return await request(paths.GET_CURRENT_MOVIE);
 }
-
-export async function getMovies() {
+interface Movie {
+	id: number;
+	name: string;
+	unique_id: string;
+	descriptor_type: string;
+	leds_per_frame: number;
+	frames_number: number;
+	fps: number;
+}
+export async function getMovies(): Promise<Movie[]> {
 	return await request(paths.GET_MOVIES);
+}
+
+export async function setCurrentMovie(id: number) {
+	return await request(paths.SET_CURRENT_MOVIE, {
+		method: 'POST',
+		body: { id },
+	});
 }
 
 export async function echo(body: unknown) {
