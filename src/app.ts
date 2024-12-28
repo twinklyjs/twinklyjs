@@ -1,5 +1,5 @@
 import * as api from './api.js';
-import {discover} from './discovery.js';
+import { discover } from './discovery.js';
 
 api.init('10.0.0.187');
 const details = await api.getLEDColor();

@@ -7,14 +7,18 @@
   "scripts": {
     "prestart": "npm run build",
     "start": "node build/src/app.js",
+    "pretest": "npm run build",
     "test": "node build/test/test.js",
     "dev": "node src/app.ts --watch",
-    "build": "tsc"
+    "build": "tsc",
+    "fix": "biome check --write .",
+		"lint": "biome check ."
   },
   "keywords": [],
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
   }
