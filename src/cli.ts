@@ -34,7 +34,7 @@ if (command !== 'discover') {
 
 switch (command) {
 	case 'setmovie': {
-		await api.setLEDOperationMode('movie');
+		await api.setLEDOperationMode(api.LEDOperationMode.MOVIE);
 		const movieId = Number(positionals[1]);
 		const setmovie = await api.setCurrentMovie(movieId);
 		console.log(setmovie);
@@ -50,6 +50,11 @@ switch (command) {
 		console.log(movies);
 		break;
 	}
+	case 'getsummary': {
+		const summary = await api.getSummary();
+		console.log(summary);
+		break;
+	}
 	case 'discover': {
 		const devices = await discover();
 		console.log(devices);
@@ -63,9 +68,11 @@ switch (command) {
 function showHelp() {
 	const help = `Usage: twinkly <command> [options]
 Commands:
-	setmovie <id> - Set the current movie'
-	getmovie - Get the current movie'
-	getmovies - Get all movies'
+	discover - Discover Twinkly devices on the network
+	getmovie - Get the current movie
+	getmovies - Get all movies
+	setmovie <id> - Set the current movie
+	getsummary - Get the summary of the device
 
 Options:
 	--ip <ip> - The IP address of the Twinkly device. Required.
