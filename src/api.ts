@@ -19,6 +19,7 @@ export const paths = {
   GET_MOVIES: '/movies',
   GET_CURRENT_MOVIE: '/led/movies/current',
   GET_SUMMARY: '/summary',
+  GET_LED_COLOR: '/led/color'
 }
 
 const TypedKeys = <T extends object>(obj: T): (keyof T)[] => {
@@ -34,6 +35,19 @@ let tokenData: TokenData;
 export async function getLEDConfig() {
   return await request(paths.GET_LED_CONFIG);
 }
+interface LEDColor{
+  hue: number,
+  saturation: number,
+  value: number,
+  red: number,
+  green: number,
+  blue: number,
+  code: number
+}
+export async function getLEDColor(): Promise<LEDColor> {
+  return await request(paths.GET_LED_COLOR);
+}
+
 
 export async function getSummary() {
   return await request(paths.GET_SUMMARY);
