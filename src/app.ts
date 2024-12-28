@@ -1,11 +1,14 @@
 import * as api from './api.js';
 import {discover} from './discovery.js';
 
-// const details = await api.getDeviceDetails();
-// console.log(details);
+api.init('10.0.0.187');
+const details = await api.getDeviceDetails();
+console.log(details);
 
-// const data = await api.getLEDConfig();
-// console.log(data);
+await api.setLEDOperationMode('color');
+await api.setLEDColor(0, 255, 0);
+const data = await api.getLEDOperationMode();
+console.log(data);
 
-const devices = await discover();
-console.log(devices);
+// const devices = await discover();
+// console.log(devices);

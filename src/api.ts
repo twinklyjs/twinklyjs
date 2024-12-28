@@ -1,4 +1,4 @@
-export const baseUrl = `http://10.0.0.167/xled/v1`;
+export const basePath = '/xled/v1';
 export const paths = {
   ECHO: '/echo',
   LOGIN: `/login`,
@@ -25,14 +25,9 @@ const TypedKeys = <T extends object>(obj: T): (keyof T)[] => {
   return Object.keys(obj) as (keyof T)[];
 };
 
-for (const key of TypedKeys(paths)) {
-  paths[key] = `${baseUrl}${paths[key]}`;
-}
-
 interface TokenData {
   authentication_token: string;
 }
-
 
 let tokenData: TokenData;
 
@@ -101,6 +96,16 @@ export interface DeviceDetails {
   wire_type: number;
   copyright: string;
   code: number;
+}
+
+/**
+ * Initialize the API with the IP address of the device.
+ * @param ip The IP address of the device
+ */
+export function init(ip: string) {
+  for (const key of TypedKeys(paths)) {
+    paths[key] = `http://${ip}${basePath}${paths[key]}`;
+  }
 }
 
 /**
