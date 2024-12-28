@@ -1,6 +1,5 @@
 import * as api from './api.js';
 import { discover } from './discovery.js';
-const readline = require('readline');
 api.init('10.0.0.167');
 await api.setLEDOperationMode('movie');
 const details = await api.getMovies();
