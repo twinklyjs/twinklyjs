@@ -2,17 +2,20 @@
   "name": "twink",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "src/app.ts",
   "type": "module",
   "scripts": {
-    "start": "bun run app.ts",
-    "dev": "bun run app.ts --watch",
+    "prestart": "npm run build",
+    "start": "node build/src/app.js",
+    "test": "node build/test/test.js",
+    "dev": "node src/app.ts --watch",
     "build": "tsc"
   },
   "keywords": [],
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
   }
 }

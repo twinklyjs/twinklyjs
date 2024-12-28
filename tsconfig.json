@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "noEmit": true,
     "strict": true,
     "target": "ESNext",
-    "module": "ESNext",
+    "module": "NodeNext",
+    "outDir": "build",
+    "declaration": true,
   }
 }

@@ -72,7 +72,43 @@ export async function setDeviceName(name: string) {
   })
 }
 
-export async function getDeviceDetails() {
+export interface DeviceDetails {
+  /**
+   * (string) Twinkly
+   */
+  product_name: string;
+  /**
+   * (numeric string), e.g. “6”
+   */
+  hardware_version: string;
+  bytes_per_led: number;
+  hw_id: string;
+  flash_size: number;
+  led_type: number;
+  product_code: string;
+  fw_family: string;
+  device_name: string;
+  uptime: string;
+  mac: string;
+  uuid: string;
+  max_supported_led: number;
+  number_of_led: number;
+  led_profile: string;
+  frame_rate: number;
+  measured_frame_rate: number;
+  movie_capacity: number;
+  max_movies: number;
+  wire_type: number;
+  copyright: string;
+  code: number;
+}
+
+/**
+ * Gets information detailed information about the device.
+ * Since firmware version 1.99.18.
+ * @returns 
+ */
+export async function getDeviceDetails(): Promise<DeviceDetails> {
   return await request(paths.GET_DEVICE_DETAILS);
 }
 
