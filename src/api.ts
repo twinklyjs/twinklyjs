@@ -9,6 +9,7 @@ export const paths = {
 	GET_LED_EFFECTS: '/led/effects',
 	GET_LED_OPERATION_MODE: '/led/mode',
 	GET_LED_BRIGHTNESS: '/led/out/brightness',
+	SET_LED_BRIGHTNESS: '/led/out/brightness',
 	GET_LAYOUT: '/led/layout/full',
 	GET_CURRENT_LED_EFFECT: '/led/effects/current',
 	GET_NETWORK_STATUS: '/network/status',
@@ -21,6 +22,10 @@ export const paths = {
 	SET_CURRENT_MOVIE: '/movies/current',
 	GET_SUMMARY: '/summary',
 	GET_LED_COLOR: '/led/color',
+	RESET_LED: '/led/reset',
+	RESET_LED2: '/led/reset2',
+	UPLOAD_FULL_MOVIE: '/led/movie/full',
+	GET_FW_VERSION: '/fw/version',
 };
 
 const TypedKeys = <T extends object>(obj: T): (keyof T)[] => {
@@ -133,6 +138,18 @@ export interface GetSummaryResponse extends CodeResponse {
 	};
 }
 
+export async function resetLED() {
+	return await request(paths.RESET_LED);
+}
+
+export async function resetLED2() {
+	return await request(paths.RESET_LED2);
+}
+
+export async function getFWVersion() {
+	return await request(paths.GET_FW_VERSION);
+}
+
 export async function getSummary(): Promise<GetSummaryResponse> {
 	return await request(paths.GET_SUMMARY);
 }
@@ -201,9 +218,30 @@ export async function echo<T>(body: T): Promise<T> {
 	});
 }
 
+export async function uploadFullMovie() {
+	return await request(paths.UPLOAD_FULL_MOVIE, {
+		method: 'POST',
+		body: {},
+	});
+}
+
 export interface GetDeviceNameResponse {
 	name: string;
 	code: number;
+}
+
+export interface SetLEDBrightnessRequest {
+	mode: string;
+	type: string;
+	value: number;
+}
+
+export async function setLEDBrightness(options: SetLEDBrightnessRequest) {
+	const { mode, type, value } = options;
+	return await request(paths.SET_LED_BRIGHTNESS, {
+		method: 'POST',
+		body: { mode, type, value },
+	});
 }
 
 export async function getDeviceName(): Promise<GetDeviceNameResponse> {
