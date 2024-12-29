@@ -1,26 +1,29 @@
 #!/usr/bin/env node
-import fs, { existsSync, write, writeFile } from 'node:fs';
-import { mkdir, readFile } from 'node:fs/promises';
+import fs from 'node:fs';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { config } from 'node:process';
 import { parseArgs } from 'node:util';
 import envPaths from 'env-paths';
 import * as api from './api.js';
 import { discover } from './discovery.js';
+
 const configDir = envPaths('twinklyjs').config;
 const configFile = path.join(configDir, 'config.json');
-const fileContents = await readFile(configFile, 'utf-8');
-async function setupConfig() {
-	if (fs.existsSync(configDir) === false) {
-		console.log('creating config directory!');
-		const dirCreation = await mkdir(configDir, { recursive: true });
-	}
 
-	if (fs.existsSync(configFile) === false) {
-		console.log('creating config file');
-		fs.writeFileSync(configFile, '');
+interface Config {
+	ip: string;
+}
+
+async function getConfig(): Promise<Config | null> {
+	try {
+		const fileContents = await readFile(configFile, 'utf-8');
+		const config = JSON.parse(fileContents);
+		return config;
+	} catch (err) {
+		return null;
 	}
 }
+
 const { values, positionals } = parseArgs({
 	options: {
 		ip: { type: 'string' },
@@ -46,7 +49,8 @@ function requireIP() {
 	api.init(ip);
 }
 
-if (existsSync(configFile) === false) {
+const config = await getConfig();
+if (!config) {
 	if (!['discover', 'config'].includes(command)) {
 		requireIP();
 	}
@@ -54,8 +58,7 @@ if (existsSync(configFile) === false) {
 	if (ip) {
 		api.init(ip);
 	} else {
-		const config = JSON.parse(fileContents);
-		if (!config.ip) {
+		if (!config?.ip) {
 			showHelp();
 			process.exit(-1);
 		}
@@ -137,23 +140,27 @@ switch (command) {
 
 		switch (getorset) {
 			case 'getip': {
-				await setupConfig();
-				if (fs.existsSync(configFile)) {
-					console.log(JSON.parse(fileContents).ip);
+				const config = await getConfig();
+				if (config) {
+					console.log(config?.ip);
+				} else {
+					console.log('No IP address set');
 				}
 				break;
 			}
 			case 'setip': {
-				const whatrwesetting = positionals[1];
-				const whatrwesettingit2 = positionals[2];
-				await setupConfig();
-				const parsedFileContents = JSON.parse(
-					await readFile(configFile, 'utf-8'),
-				).ip;
-				await fs.writeFileSync(
-					configFile,
-					JSON.stringify({ ip: whatrwesettingit2 }),
-				);
+				const newIP = positionals[2];
+				let config = await getConfig();
+				if (config) {
+					config.ip = newIP;
+				} else {
+					config = { ip: newIP };
+					if (!fs.existsSync(configDir)) {
+						await mkdir(configDir, { recursive: true });
+					}
+				}
+				await writeFile(configFile, JSON.stringify(config), 'utf-8');
+				console.log('Config saved.');
 				break;
 			}
 		}
