@@ -30,6 +30,26 @@ console.log(devices);
 
 This module currently only implements a subset of the available API.  I love contributions!  Feel free to open a PR, and reference the underlying part of the API you're trying to support.
 
+### CLI usage
+
+```
+twinkly --ip <ip of twinkly> <command> <Parameters>
+
+Config usage:
+twinkly config  <set/get>ip <ip>
+
+Positionals
+
+config:
+setip - Set the Default ip in config file.
+getip - Get the currently set ip in config file.
+
+Flags
+
+--ip - followed by the ip used in the current instance (If ip not set in config, required for all commands aside from config and discover)
+
+```
+
 ## License
 
 [MIT](LICENSE.md)
