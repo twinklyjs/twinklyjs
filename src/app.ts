@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import * as api from './api.js';
 import { discover } from './discovery.js';
 api.init('10.0.0.167');
