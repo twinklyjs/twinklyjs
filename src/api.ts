@@ -1,22 +1,27 @@
 export const basePath = '/xled/v1';
 export const paths = {
-	ECHO: '/echo',
 	LOGIN: '/login',
 	VERIFY: '/verify',
+	LOGOUT: '/logout',
+	ECHO: '/echo',
 	GET_DEVICE_DETAILS: '/gestalt',
 	GET_DEVICE_NAME: '/device_name',
+	SET_DEVICE_NAME: '/device_name',
+	GET_TIMER: '/timer',
+	SET_TIMER: '/timer',
+	GET_LAYOUT: '/led/layout/full',
+	UPLOAD_LAYOUT: '/led/layout/full',
+	DELETE_LAYOUT: '/led/layout/full',
 	GET_LED_CONFIG: '/led/config',
 	GET_LED_EFFECTS: '/led/effects',
 	GET_LED_OPERATION_MODE: '/led/mode',
 	GET_LED_BRIGHTNESS: '/led/out/brightness',
 	SET_LED_BRIGHTNESS: '/led/out/brightness',
-	GET_LAYOUT: '/led/layout/full',
 	GET_CURRENT_LED_EFFECT: '/led/effects/current',
 	GET_NETWORK_STATUS: '/network/status',
 	SET_NETWORK_STATUS: '/network/status',
 	SET_LED_COLOR: '/led/color',
 	SET_LED_OPERATION_MODE: '/led/mode',
-	SET_DEVICE_NAME: '/device_name',
 	GET_MOVIES: '/movies',
 	GET_CURRENT_MOVIE: '/movies/current',
 	SET_CURRENT_MOVIE: '/movies/current',
@@ -32,14 +37,334 @@ const TypedKeys = <T extends object>(obj: T): (keyof T)[] => {
 	return Object.keys(obj) as (keyof T)[];
 };
 
-interface TokenData {
-	authentication_token: string;
+/**
+ * Initialize the API with the IP address of the device.
+ * @param ip The IP address of the device
+ */
+export function init(ip: string) {
+	for (const key of TypedKeys(paths)) {
+		paths[key] = `http://${ip}${basePath}${paths[key]}`;
+	}
 }
 
-let tokenData: TokenData;
+let tokenData: LoginResponse;
 
 export interface CodeResponse {
 	code: number;
+}
+
+export interface LoginResponse extends CodeResponse {
+	/**
+	 * Access token in format: 8 byte string base64 encoded. First authenticated API with this token must be Verify.
+	 */
+	authentication_token: string;
+
+	/**
+	 * 41 byte string ([0-9a-h])
+	 */
+	'challenge-response': string;
+}
+
+/**
+ * Obtain an auth token from the API.  As far as I can tell this is mostly theatre since there is no
+ * private key or token from the app required?
+ * @returns The token data
+ */
+export async function login(): Promise<LoginResponse> {
+	const challengeBits = new Uint8Array(32);
+	crypto.getRandomValues(challengeBits);
+	const challenge = btoa(String.fromCharCode(...challengeBits));
+	const res = await fetch(paths.LOGIN, {
+		method: 'POST',
+		body: JSON.stringify({ challenge }),
+	});
+	throwIfErr(res);
+	const data = await res.json();
+	return data;
+}
+
+export interface VerifyRequest {
+	/**
+	 * (optional) value returned by login request.
+	 */
+	'challenge-response': string;
+}
+
+/**
+ * Verify the token retrieved by Login. Successful call invalidates previous token, if it existed.
+ * Since firmware version 1.99.18.
+ */
+export async function verify(options: VerifyRequest): Promise<CodeResponse> {
+	return await request(paths.VERIFY, {
+		method: 'POST',
+		body: options,
+	});
+}
+
+/**
+ * Probably invalidate access token. Doesn’t work.
+ * Since firmware version 1.99.18.
+ */
+export async function logout(): Promise<CodeResponse> {
+	return await request(paths.LOGOUT, {
+		method: 'POST',
+	});
+}
+
+export interface DeviceDetailsResponse extends CodeResponse {
+	/**
+	 * (string) Twinkly
+	 */
+	product_name: string;
+	/**
+	 * (numeric string), e.g. “6”
+	 */
+	hardware_version: string;
+	/**
+	 * (number), 4
+	 */
+	bytes_per_led: number;
+	/**
+	 * (string), see section Hardware ID in Protocol details.
+	 */
+	hw_id: string;
+	/**
+	 * (number), 64
+	 */
+	flash_size: number;
+	/**
+	 * (number), 14
+	 */
+	led_type: number;
+	/**
+	 * (string), e.g. “TWS250STP”
+	 */
+	product_code: string;
+	/**
+	 * (string) “G”,
+	 */
+	fw_family: string;
+	/**
+	 * (string), name of the device - see section Device Name in Protocol details.
+	 */
+	device_name: string;
+	/**
+	 * (string) number as a string. Seconds since start. E.g. “60”
+	 */
+	uptime: string;
+	/**
+	 * (string) MAC address as six groups of two hexadecimal digits separated by colons (:).
+	 */
+	mac: string;
+	/**
+	 * (string) UUID of the device. Since firmware version: 2.0.8. Device in family “D” has value 00000000-0000-0000-0000-000000000000.
+	 */
+	uuid: string;
+	/**
+	 * (number), e.g. firmware family “D”: 180 in firmware version 1.99.20, 224 in 1.99.24, 228 in 1.99.30, 255 in 2.0.0 and newer.
+	 */
+	max_supported_led: number;
+	/**
+	 * (number), e.g. 105
+	 */
+	number_of_led: number;
+	/**
+	 * (string) “RGB”
+	 */
+	led_profile: string;
+	/**
+	 * (number), 25
+	 */
+	frame_rate: number;
+	/**
+	 * (number), e.g. 23.26. Since firmware version 2.5.6.
+	 */
+	measured_frame_rate: number;
+	/**
+	 * (number), e.g. 1984, since firmware version 2.4.14: 992
+	 */
+	movie_capacity: number;
+	/**
+	 * (integer), e.g. 1 or 4
+	 */
+	wire_type: number;
+	/**
+	 * (string) “LEDWORKS 2017”
+	 */
+	copyright: string;
+}
+
+/**
+ * Gets information detailed information about the device.
+ * Since firmware version 1.99.18.
+ * @returns
+ */
+export async function getDeviceDetails(): Promise<DeviceDetailsResponse> {
+	return await request(paths.GET_DEVICE_DETAILS);
+}
+
+export interface GetDeviceNameResponse extends CodeResponse {
+	/**
+	 * (string) Device name.
+	 */
+	name: string;
+}
+
+/**
+ * Gets device name
+ * Since firmware version 1.99.18.
+ */
+export async function getDeviceName(): Promise<GetDeviceNameResponse> {
+	return await request(paths.GET_DEVICE_NAME);
+}
+
+export interface SetDeviceNameRequest {
+	/**
+	 * (string) Desired device name. At most 32 characters.
+	 */
+	name: string;
+}
+
+/**
+ * Sets device name
+ */
+export async function setDeviceName(
+	options: SetDeviceNameRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_DEVICE_NAME, {
+		method: 'POST',
+		body: options,
+	});
+}
+
+/**
+ * Responds with requested message.
+ * Since firmware version 1.99.18.
+ */
+export async function echo<T>(body: T): Promise<T> {
+	return await request(paths.ECHO, {
+		method: 'POST',
+		body,
+	});
+}
+
+export interface GetTimerResponse extends CodeResponse {
+	/**
+	 * (integer) current time in seconds after midnight
+	 */
+	time_now: number;
+
+	/**
+	 * (number) time when to turn lights on in seconds after midnight. -1 if not set
+	 */
+	time_on: number;
+
+	/**
+	 * (number) time when to turn lights off in seconds after midnight. -1 if not set
+	 */
+	time_off: number;
+}
+
+/**
+ * Gets time when lights should be turned on and time to turn them off.
+ * Since firmware version 1.99.18.
+ */
+export async function getTimer(): Promise<GetTimerResponse> {
+	return await request(paths.GET_TIMER);
+}
+
+export interface SetTimerRequest {
+	/**
+	 * (integer) current time in seconds after midnight
+	 */
+	time_now: number;
+
+	/**
+	 * (number) time when to turn lights on in seconds after midnight. -1 if not set
+	 */
+	time_on: number;
+
+	/**
+	 * (number) time when to turn lights off in seconds after midnight. -1 if not set
+	 */
+	time_off: number;
+}
+
+export async function setTimer(
+	options: SetTimerRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_TIMER, {
+		method: 'POST',
+		body: options,
+	});
+}
+
+export interface Layout {
+	/**
+	 * (integer), e.g. 0
+	 */
+	aspectXY: number;
+
+	/**
+	 * (integer), e.g. 0
+	 */
+	aspectXZ: number;
+
+	/**
+	 * (array)
+	 */
+	coordinates: { x: number; y: number; z: number }[];
+
+	/**
+	 * (string enum)
+	 */
+	source: 'linear' | '2d' | '3d';
+
+	/**
+	 * (bool), e.g. false
+	 */
+	synthesized: boolean;
+}
+
+export interface GetLayoutResponse extends Layout {
+	/**
+	 * (string), e.g. “00000000-0000-0000-0000-000000000000”
+	 */
+	uuid: string;
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function getLayout(): Promise<GetLayoutResponse> {
+	return await request(paths.GET_LAYOUT);
+}
+
+export type UploadLayoutRequest = Layout;
+
+export interface UploadLayoutResponse extends CodeResponse {
+	/**
+	 * (integer)
+	 */
+	parsed_coordinates: number;
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function uploadLayout(
+	options: UploadLayoutRequest,
+): Promise<UploadLayoutResponse> {
+	return await request(paths.UPLOAD_LAYOUT, {
+		method: 'POST',
+		body: options,
+	});
+}
+
+export async function deleteLayout(): Promise<CodeResponse> {
+	return await request(paths.DELETE_LAYOUT, {
+		method: 'DELETE',
+	});
 }
 
 export interface GetLEDConfigResponse extends CodeResponse {
@@ -205,29 +530,11 @@ export async function setCurrentMovie(id: number): Promise<CodeResponse> {
 	});
 }
 
-/**
- * Responds with requested message.
- * Since firmware version 1.99.18.
- * @param body
- * @returns
- */
-export async function echo<T>(body: T): Promise<T> {
-	return await request(paths.ECHO, {
-		method: 'POST',
-		body,
-	});
-}
-
 export async function uploadFullMovie() {
 	return await request(paths.UPLOAD_FULL_MOVIE, {
 		method: 'POST',
 		body: {},
 	});
-}
-
-export interface GetDeviceNameResponse {
-	name: string;
-	code: number;
 }
 
 export interface SetLEDBrightnessRequest {
@@ -242,74 +549,6 @@ export async function setLEDBrightness(options: SetLEDBrightnessRequest) {
 		method: 'POST',
 		body: { mode, type, value },
 	});
-}
-
-export async function getDeviceName(): Promise<GetDeviceNameResponse> {
-	return await request(paths.GET_DEVICE_NAME);
-}
-
-/**
- * Sets device name
- * @param name (string) Desired device name. At most 32 characters.
- * @returns
- */
-export async function setDeviceName(name: string): Promise<CodeResponse> {
-	return await request(paths.SET_DEVICE_NAME, {
-		method: 'POST',
-		body: {
-			name,
-		},
-	});
-}
-
-export interface DeviceDetails {
-	/**
-	 * (string) Twinkly
-	 */
-	product_name: string;
-	/**
-	 * (numeric string), e.g. “6”
-	 */
-	hardware_version: string;
-	bytes_per_led: number;
-	hw_id: string;
-	flash_size: number;
-	led_type: number;
-	product_code: string;
-	fw_family: string;
-	device_name: string;
-	uptime: string;
-	mac: string;
-	uuid: string;
-	max_supported_led: number;
-	number_of_led: number;
-	led_profile: string;
-	frame_rate: number;
-	measured_frame_rate: number;
-	movie_capacity: number;
-	max_movies: number;
-	wire_type: number;
-	copyright: string;
-	code: number;
-}
-
-/**
- * Initialize the API with the IP address of the device.
- * @param ip The IP address of the device
- */
-export function init(ip: string) {
-	for (const key of TypedKeys(paths)) {
-		paths[key] = `http://${ip}${basePath}${paths[key]}`;
-	}
-}
-
-/**
- * Gets information detailed information about the device.
- * Since firmware version 1.99.18.
- * @returns
- */
-export async function getDeviceDetails(): Promise<DeviceDetails> {
-	return await request(paths.GET_DEVICE_DETAILS);
 }
 
 export interface GetLEDEffectsResponse extends CodeResponse {
@@ -367,45 +606,6 @@ export interface GetLEDBrightnessResponse extends CodeResponse {
  */
 export async function getLEDBrightness(): Promise<GetLEDBrightnessResponse> {
 	return await request(paths.GET_LED_BRIGHTNESS);
-}
-
-export interface GetLayoutResponse extends CodeResponse {
-	/**
-	 * (integer), e.g. 0
-	 */
-	aspectXY: number;
-
-	/**
-	 * (integer), e.g. 0
-	 */
-	aspectXZ: number;
-
-	/**
-	 * (array)
-	 */
-	coordinates: { x: number; y: number; z: number }[];
-
-	/**
-	 * (string enum)
-	 */
-	source: 'linear' | '2d' | '3d';
-
-	/**
-	 * (bool), e.g. false
-	 */
-	synthesized: boolean;
-
-	/**
-	 * (string), e.g. “00000000-0000-0000-0000-000000000000”
-	 */
-	uuid: string;
-}
-
-/**
- * Since firmware version 1.99.18.
- */
-export async function getLayout(): Promise<GetLayoutResponse> {
-	return await request(paths.GET_LAYOUT);
 }
 
 export async function getCurrentLEDEffect() {
@@ -494,24 +694,6 @@ export async function setLEDOperationMode(mode: LEDOperationMode) {
 	});
 }
 
-/**
- * Obtain an auth token from the API.  As far as I can tell this is mostly theatre since there is no
- * private key or token from the app required?
- * @returns The token data
- */
-async function getTokenData() {
-	const challengeBits = new Uint8Array(32);
-	crypto.getRandomValues(challengeBits);
-	const challenge = btoa(String.fromCharCode(...challengeBits));
-	const res = await fetch(paths.LOGIN, {
-		method: 'POST',
-		body: JSON.stringify({ challenge }),
-	});
-	throwIfErr(res);
-	const data = await res.json();
-	return data;
-}
-
 export async function throwIfErr(response: Response) {
 	if (response.ok) {
 		return;
@@ -539,7 +721,7 @@ export class FetchError extends Error {
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 async function request(url: string, options: any = {}) {
 	if (!tokenData) {
-		tokenData = await getTokenData();
+		tokenData = await login();
 		await request(paths.VERIFY, { method: 'POST' });
 	}
 
