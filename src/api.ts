@@ -12,24 +12,26 @@ export const paths = {
 	GET_LAYOUT: '/led/layout/full',
 	UPLOAD_LAYOUT: '/led/layout/full',
 	DELETE_LAYOUT: '/led/layout/full',
-	GET_LED_CONFIG: '/led/config',
-	GET_LED_EFFECTS: '/led/effects',
 	GET_LED_OPERATION_MODE: '/led/mode',
+	SET_LED_OPERATION_MODE: '/led/mode',
+	GET_LED_COLOR: '/led/color',
+	SET_LED_COLOR: '/led/color',
+	UPLOAD_FULL_MOVIE: '/led/movie/full',
+	GET_LED_MOVIE_CONFIG: '/led/movie/config',
+	SET_LED_MOVIE_CONFIG: '/led/movie/config',
 	GET_LED_BRIGHTNESS: '/led/out/brightness',
 	SET_LED_BRIGHTNESS: '/led/out/brightness',
+	GET_LED_CONFIG: '/led/config',
+	GET_LED_EFFECTS: '/led/effects',
 	GET_CURRENT_LED_EFFECT: '/led/effects/current',
 	GET_NETWORK_STATUS: '/network/status',
 	SET_NETWORK_STATUS: '/network/status',
-	SET_LED_COLOR: '/led/color',
-	SET_LED_OPERATION_MODE: '/led/mode',
 	GET_MOVIES: '/movies',
 	GET_CURRENT_MOVIE: '/movies/current',
 	SET_CURRENT_MOVIE: '/movies/current',
 	GET_SUMMARY: '/summary',
-	GET_LED_COLOR: '/led/color',
 	RESET_LED: '/led/reset',
 	RESET_LED2: '/led/reset2',
-	UPLOAD_FULL_MOVIE: '/led/movie/full',
 	GET_FW_VERSION: '/fw/version',
 };
 
@@ -370,23 +372,105 @@ export async function deleteLayout(): Promise<CodeResponse> {
 	});
 }
 
-export interface GetLEDConfigResponse extends CodeResponse {
-	strings: {
-		first_led_id: number;
-		length: number;
-	}[];
+export interface GetLEDOperationModeResponse extends CodeResponse {
+	/**
+	 * (string) mode of operation.
+	 */
+	mode: LEDOperationMode;
+
+	/**
+	 * (integer), by default 0. Since firmware version 2.4.21.
+	 */
+	shop_mode: number;
 }
 
-export async function getLEDConfig(): Promise<GetLEDConfigResponse> {
-	return await request(paths.GET_LED_CONFIG);
+/**
+ * Gets current LED operation mode.
+ */
+export async function getLEDOperationMode(): Promise<GetLEDOperationModeResponse> {
+	return await request(paths.GET_LED_OPERATION_MODE);
+}
+
+export enum LEDOperationMode {
+	/**
+	 * Turns off lights
+	 */
+	OFF = 'off',
+	/**
+	 * shows a static color
+	 */
+	COLOR = 'color',
+	/**
+	 * starts predefined sequence of effects that are changed after few seconds
+	 */
+	DEMO = 'demo',
+	/**
+	 * plays predefined or uploaded effect. If movie hasn’t been set (yet) code 1104 is returned.
+	 */
+	MOVIE = 'movie',
+	/**
+	 * receive effect in real time
+	 */
+	RT = 'rt',
+	/**
+	 * plays effect with effect_id
+	 */
+	EFFECT = 'effect',
+	/**
+	 * plays a movie from a playlist. Since firmware version 2.5.6.
+	 */
+	PLAYLIST = 'playlist',
+}
+
+export interface SetLEDOperationModeRequest {
+	/**
+	 * (string) mode of operation. See LED operating modes in Protocol details.
+	 */
+	mode: LEDOperationMode;
+
+	/**
+	 * (int), id of effect, e.g. 0. Set together with mode: effect.
+	 */
+	effect_id?: number;
+}
+
+/**
+ * Changes LED operation mode.
+ * Since firmware version 1.99.18.
+ */
+export async function setLEDOperationMode(
+	options: SetLEDOperationModeRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_LED_OPERATION_MODE, {
+		method: 'POST',
+		body: options,
+	});
 }
 
 export interface GetLEDColorResponse extends CodeResponse {
+	/**
+	 * (integer), hue component of HSV, in range 0..359
+	 */
 	hue: number;
+	/**
+	 * (integer), saturation component of HSV, in range 0..255
+	 */
 	saturation: number;
+	/**
+	 * (integer), value component of HSV, in range 0..255
+	 */
 	value: number;
+	/**
+	 * (integer), red component of RGB, in range 0..255
+	 */
 	red: number;
+	/**
+	 * (integer), green component of RGB, in range 0..255
+	 */
 	green: number;
+	/**
+	 * (integer), blue component of RGB, in range 0..255
+	 */
 	blue: number;
 }
 
@@ -396,6 +480,234 @@ export interface GetLEDColorResponse extends CodeResponse {
  */
 export async function getLEDColor(): Promise<GetLEDColorResponse> {
 	return await request(paths.GET_LED_COLOR);
+}
+
+export interface HSVColor {
+	/**
+	 * (integer), hue component of HSV, in range 0..359
+	 */
+	hue: number;
+
+	/**
+	 * (integer), saturation component of HSV, in range 0..255
+	 */
+	saturation: number;
+
+	/**
+	 * (integer), value component of HSV, in range 0..255
+	 */
+	value: number;
+}
+
+export interface RGBColor {
+	/**
+	 * (integer), red component of RGB, in range 0..255
+	 */
+	red: number;
+
+	/**
+	 * (integer), green component of RGB, in range 0..255
+	 */
+	green: number;
+
+	/**
+	 * (integer), blue component of RGB, in range 0..255
+	 */
+	blue: number;
+}
+
+export type SetLEDColorRequest = HSVColor | RGBColor;
+
+/**
+ * Sets the color shown when in color mode.
+ */
+export async function setLEDColor(
+	options: SetLEDColorRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_LED_COLOR, {
+		method: 'POST',
+		body: options,
+	});
+}
+
+export interface UploadFullMovieResponse extends CodeResponse {
+	/**
+	 * (integer) number of received frames
+	 */
+	frames_number: number;
+}
+
+/**
+ * Effect is sent in body of the request. If mode is movie it starts playing this effect.
+ * Since firmware version 1.99.18.
+ */
+export async function uploadFullMovie(
+	content: ArrayBuffer,
+): Promise<UploadFullMovieResponse> {
+	return await request(paths.UPLOAD_FULL_MOVIE, {
+		method: 'POST',
+		body: content,
+	});
+}
+
+export interface GetLEDMovieConfigResponse extends CodeResponse {
+	frame_delay: number;
+	/**
+	 * (integer) seems to be total number of LEDs to use
+	 */
+	leds_number: number;
+	/**
+	 * (integer), e.g. 0
+	 */
+	loop_type: number;
+	/**
+	 * (integer)
+	 */
+	frames_number: number;
+
+	sync: {
+		mode: string;
+		/**
+		 * (string), e.g. “”. Defined if mode is “slave”. Since firmware version 2.5.6 not present if empty
+		 */
+		slave_id: string;
+		/**
+		 * (string), e.g. “”. Defined if mode is “slave” or “master”. Since firmware version 2.5.6 not present if empty
+		 */
+		master_id: string;
+		/**
+		 * (number), default 0. Since firmware version 2.5.6.
+		 */
+		compat_mode: number;
+	};
+	/**
+	 * (object), since firmware family “G” version 2.4.21 until 2.4.30 and firmware family “F” version 2.4.14 until 2.4.30.
+	 */
+	mic: {
+		filters: unknown[];
+		brightness_depth: number;
+		hue_depth: number;
+		value_depth: number;
+		saturation_depth: number;
+	};
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function getLEDMovieConfig(): Promise<GetLEDMovieConfigResponse> {
+	return await request(paths.GET_LED_MOVIE_CONFIG);
+}
+
+export interface SetLEDMovieConfigRequest {
+	/**
+	 * (integer) the delay in milliseconds between two consecutive frames. For n fps, this is 1000 / n.
+	 */
+	frame_delay: number;
+	/**
+	 * (integer) seems to be total number of LEDs to use
+	 */
+	leds_number: number;
+	frames_number: number;
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function setLEDMovieConfig(
+	options: SetLEDMovieConfigRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_LED_MOVIE_CONFIG, {
+		method: 'POST',
+		body: options,
+	});
+}
+
+export interface GetLEDBrightnessResponse extends CodeResponse {
+	/**
+	 * (string) one of “enabled” or “disabled”.
+	 */
+	mode: 'enabled' | 'disabled';
+
+	/**
+	 * (integer) brightness level in range of 0..100
+	 */
+	value: number;
+}
+
+/**
+ * Gets the current brightness level.
+ * For devices with firmware family “D” since version 2.3.5.
+ * For devices with firmware family “F” since 2.4.2.
+ * For devices with firmware family “G” since version 2.4.21.
+ */
+export async function getLEDBrightness(): Promise<GetLEDBrightnessResponse> {
+	return await request(paths.GET_LED_BRIGHTNESS);
+}
+
+export interface SetLEDBrightnessRequest {
+	/**
+	 * (string) one of “enabled”, “disabled”
+	 */
+	mode: 'enabled' | 'disabled';
+	/**
+	 * (string) either “A” for Absolute value or “R” for Relative value
+	 */
+	type: 'A' | 'R';
+	/**
+	 * (signed integer) brightness level in range of 0..100 if type is “A”, or change of level in range -100..100 if type is “R”
+	 */
+	value: number;
+}
+
+/**
+ * Sets the brightness level.
+ * For devices with firmware family “D” since version 2.3.5.
+ * For devices with firmware family “F” since 2.4.2.
+ * For devices with firmware family “G” since version 2.4.21.
+ */
+export async function setLEDBrightness(
+	options: SetLEDBrightnessRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_LED_BRIGHTNESS, {
+		method: 'POST',
+		body: options,
+	});
+}
+
+export interface GetLEDEffectsResponse extends CodeResponse {
+	/**
+	 * (integer), e.g. 5 until firmware version 2.4.30 and 15 since firmware version 2.5.6.
+	 */
+	effects_number: number;
+
+	/**
+	 * (array), since firmware version 2.5.6.
+	 */
+	unique_ids: string[];
+}
+
+/**
+ * Retrieve the identities of all available predefined effects.
+ *
+ * Since firmware version 1.99.18.
+ */
+export async function getLEDEffects(): Promise<GetLEDEffectsResponse> {
+	return await request(paths.GET_LED_EFFECTS);
+}
+
+export interface GetLEDConfigResponse extends CodeResponse {
+	strings: {
+		first_led_id: number;
+		length: number;
+	}[];
+}
+
+/**
+ *
+ */
+export async function getLEDConfig(): Promise<GetLEDConfigResponse> {
+	return await request(paths.GET_LED_CONFIG);
 }
 
 export interface GetSummaryResponse extends CodeResponse {
@@ -535,168 +847,8 @@ export async function setCurrentMovie(id: number): Promise<CodeResponse> {
 	});
 }
 
-export async function uploadFullMovie() {
-	return await request(paths.UPLOAD_FULL_MOVIE, {
-		method: 'POST',
-		body: {},
-	});
-}
-
-export interface SetLEDBrightnessRequest {
-	mode: string;
-	type: string;
-	value: number;
-}
-
-export async function setLEDBrightness(options: SetLEDBrightnessRequest) {
-	const { mode, type, value } = options;
-	return await request(paths.SET_LED_BRIGHTNESS, {
-		method: 'POST',
-		body: { mode, type, value },
-	});
-}
-
-export interface GetLEDEffectsResponse extends CodeResponse {
-	/**
-	 * (integer), e.g. 5 until firmware version 2.4.30 and 15 since firmware version 2.5.6.
-	 */
-	effects_number: number;
-
-	/**
-	 * (array), since firmware version 2.5.6.
-	 */
-	unique_ids: string[];
-}
-
-export async function getLEDEffects(): Promise<GetLEDEffectsResponse> {
-	return await request(paths.GET_LED_EFFECTS);
-}
-
-export interface GetLEDOperationModeResponse extends CodeResponse {
-	/**
-	 * (string) mode of operation.
-	 */
-	mode: LEDOperationMode;
-
-	/**
-	 * (integer), by default 0. Since firmware version 2.4.21.
-	 */
-	shop_mode: number;
-}
-
-/**
- * Gets current LED operation mode.
- */
-export async function getLEDOperationMode() {
-	return await request(paths.GET_LED_OPERATION_MODE);
-}
-
-export interface GetLEDBrightnessResponse extends CodeResponse {
-	/**
-	 * (string) one of “enabled” or “disabled”.
-	 */
-	mode: 'enabled' | 'disabled';
-
-	/**
-	 * (integer) brightness level in range of 0..100
-	 */
-	value: number;
-}
-
-/**
- * Gets the current brightness level.
- * For devices with firmware family “D” since version 2.3.5.
- * For devices with firmware family “F” since 2.4.2.
- * For devices with firmware family “G” since version 2.4.21.
- */
-export async function getLEDBrightness(): Promise<GetLEDBrightnessResponse> {
-	return await request(paths.GET_LED_BRIGHTNESS);
-}
-
 export async function getCurrentLEDEffect() {
 	return await request(paths.GET_CURRENT_LED_EFFECT);
-}
-
-export interface HSVColor {
-	/**
-	 * (integer), hue component of HSV, in range 0..359
-	 */
-	hue: number;
-
-	/**
-	 * (integer), saturation component of HSV, in range 0..255
-	 */
-	saturation: number;
-
-	/**
-	 * (integer), value component of HSV, in range 0..255
-	 */
-	value: number;
-}
-
-export interface RGBColor {
-	/**
-	 * (integer), red component of RGB, in range 0..255
-	 */
-	red: number;
-
-	/**
-	 * (integer), green component of RGB, in range 0..255
-	 */
-	green: number;
-
-	/**
-	 * (integer), blue component of RGB, in range 0..255
-	 */
-	blue: number;
-}
-
-export type SetLEDColorRequest = HSVColor | RGBColor;
-
-/**
- * Sets the color shown when in color mode.
- * @param red
- * @param green
- * @param blue
- * @returns
- */
-export async function setLEDColor(
-	options: SetLEDColorRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_LED_COLOR, {
-		method: 'POST',
-		body: options,
-	});
-}
-
-export enum LEDOperationMode {
-	OFF = 'off',
-	COLOR = 'color',
-	DEMO = 'demo',
-	MOVIE = 'movie',
-	RT = 'rt',
-	EFFECT = 'effect',
-	PLAYLIST = 'playlist',
-}
-
-/**
- * off - turns off lights
- * color - shows a static color
- * demo - starts predefined sequence of effects that are changed after few seconds
- * movie - plays predefined or uploaded effect. If movie hasn’t been set (yet) code 1104 is returned.
- * rt - receive effect in real time
- * effect - plays effect with effect_id
- * playlist - plays a movie from a playlist. Since firmware version 2.5.6.
- * @param {*} mode
- * @returns
- */
-export async function setLEDOperationMode(mode: LEDOperationMode) {
-	return await request(paths.SET_LED_OPERATION_MODE, {
-		method: 'POST',
-		body: {
-			mode,
-		},
-	});
 }
 
 export async function throwIfErr(response: Response) {

@@ -67,7 +67,7 @@ if (!config) {
 }
 switch (command) {
 	case 'setmovie': {
-		await api.setLEDOperationMode(api.LEDOperationMode.MOVIE);
+		await api.setLEDOperationMode({ mode: api.LEDOperationMode.MOVIE });
 		const movieId = Number(positionals[1]);
 		const setmovie = await api.setCurrentMovie(movieId);
 		console.log(setmovie);
@@ -95,8 +95,8 @@ switch (command) {
 	}
 	case 'setbrightness': {
 		const setbrightness = await api.setLEDBrightness({
-			mode: positionals[1],
-			type: positionals[2],
+			mode: positionals[1] as 'enabled' | 'disabled',
+			type: positionals[2] as 'A' | 'R',
 			value: Number(positionals[3]),
 		});
 		console.log(setbrightness);
@@ -104,7 +104,7 @@ switch (command) {
 	}
 	case 'setopmode': {
 		const mode = positionals[1] as api.LEDOperationMode;
-		const setopmode = await api.setLEDOperationMode(mode);
+		const setopmode = await api.setLEDOperationMode({ mode });
 		console.log(setopmode);
 		break;
 	}
