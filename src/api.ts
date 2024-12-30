@@ -16,14 +16,18 @@ export const paths = {
 	SET_LED_OPERATION_MODE: '/led/mode',
 	GET_LED_COLOR: '/led/color',
 	SET_LED_COLOR: '/led/color',
-	UPLOAD_FULL_MOVIE: '/led/movie/full',
-	GET_LED_MOVIE_CONFIG: '/led/movie/config',
-	SET_LED_MOVIE_CONFIG: '/led/movie/config',
-	GET_LED_BRIGHTNESS: '/led/out/brightness',
-	SET_LED_BRIGHTNESS: '/led/out/brightness',
-	GET_LED_CONFIG: '/led/config',
 	GET_LED_EFFECTS: '/led/effects',
 	GET_CURRENT_LED_EFFECT: '/led/effects/current',
+	SET_CURRENT_LED_EFFECT: '/led/effects/current',
+	GET_LED_CONFIG: '/led/config',
+	SET_LED_CONFIG: '/led/config',
+	UPLOAD_FULL_MOVIE: '/led/movie/full',
+	GET_LED_BRIGHTNESS: '/led/out/brightness',
+	SET_LED_BRIGHTNESS: '/led/out/brightness',
+	GET_LED_SATURATION: '/led/out/saturation',
+	SET_LED_SATURATION: '/led/out/saturation',
+	GET_LED_MOVIE_CONFIG: '/led/movie/config',
+	SET_LED_MOVIE_CONFIG: '/led/movie/config',
 	GET_NETWORK_STATUS: '/network/status',
 	SET_NETWORK_STATUS: '/network/status',
 	GET_MOVIES: '/movies',
@@ -530,6 +534,100 @@ export async function setLEDColor(
 	});
 }
 
+export interface GetLEDEffectsResponse extends CodeResponse {
+	/**
+	 * (integer), e.g. 5 until firmware version 2.4.30 and 15 since firmware version 2.5.6.
+	 */
+	effects_number: number;
+
+	/**
+	 * (array), since firmware version 2.5.6.
+	 */
+	unique_ids: string[];
+}
+
+/**
+ * Retrieve the identities of all available predefined effects.
+ *
+ * Since firmware version 1.99.18.
+ */
+export async function getLEDEffects(): Promise<GetLEDEffectsResponse> {
+	return await request(paths.GET_LED_EFFECTS);
+}
+
+export interface GetCurrentLEDEffectResponse extends CodeResponse {
+	/**
+	 * (string), UUID. Since firmware version 2.5.6.
+	 */
+	unique_id: string;
+	/**
+	 * (integer), e.g. 0
+	 */
+	effect_id: number;
+}
+
+export async function getCurrentLEDEffect(): Promise<GetCurrentLEDEffectResponse> {
+	return await request(paths.GET_CURRENT_LED_EFFECT);
+}
+
+export interface SetCurrentLEDEffectRequest {
+	/**
+	 * (int), id of effect, e.g. 0.
+	 */
+	effect_id: number;
+}
+
+/**
+ * Sets which effect to show when in effect mode.
+ * Since firmware version 1.99.18.
+ */
+export async function setCurrentLEDEffect(
+	options: SetCurrentLEDEffectRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_CURRENT_LED_EFFECT, {
+		method: 'POST',
+		body: options,
+	});
+}
+
+export interface LEDConfigString {
+	/**
+	 * (integer), e.g. 0
+	 */
+	first_led_id: number;
+	/**
+	 * (integer), e.g. 105
+	 */
+	length: number;
+}
+
+export interface GetLEDConfigResponse extends CodeResponse {
+	strings: LEDConfigString[];
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function getLEDConfig(): Promise<GetLEDConfigResponse> {
+	return await request(paths.GET_LED_CONFIG);
+}
+
+export interface SetLEDConfigRequest {
+	strings: LEDConfigString[];
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function setLEDConfig(
+	options: SetLEDConfigRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_LED_CONFIG, {
+		method: 'POST',
+		body: options,
+	});
+}
+
 export interface UploadFullMovieResponse extends CodeResponse {
 	/**
 	 * (integer) number of received frames
@@ -547,6 +645,113 @@ export async function uploadFullMovie(
 	return await request(paths.UPLOAD_FULL_MOVIE, {
 		method: 'POST',
 		body: content,
+	});
+}
+
+export interface GetLEDBrightnessResponse extends CodeResponse {
+	/**
+	 * (string) one of “enabled” or “disabled”.
+	 */
+	mode: 'enabled' | 'disabled';
+
+	/**
+	 * (integer) brightness level in range of 0..100
+	 */
+	value: number;
+}
+
+/**
+ * Gets the current brightness level.
+ * For devices with firmware family “D” since version 2.3.5.
+ * For devices with firmware family “F” since 2.4.2.
+ * For devices with firmware family “G” since version 2.4.21.
+ */
+export async function getLEDBrightness(): Promise<GetLEDBrightnessResponse> {
+	return await request(paths.GET_LED_BRIGHTNESS);
+}
+
+export interface SetLEDBrightnessRequest {
+	/**
+	 * (string) one of “enabled”, “disabled”
+	 */
+	mode: 'enabled' | 'disabled';
+	/**
+	 * (string) either “A” for Absolute value or “R” for Relative value
+	 */
+	type: 'A' | 'R';
+	/**
+	 * (signed integer) brightness level in range of 0..100 if type is “A”, or change of level in range -100..100 if type is “R”
+	 */
+	value: number;
+}
+
+/**
+ * Sets the brightness level.
+ * For devices with firmware family “D” since version 2.3.5.
+ * For devices with firmware family “F” since 2.4.2.
+ * For devices with firmware family “G” since version 2.4.21.
+ */
+export async function setLEDBrightness(
+	options: SetLEDBrightnessRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_LED_BRIGHTNESS, {
+		method: 'POST',
+		body: options,
+	});
+}
+
+export interface GetLEDSaturationResponse extends CodeResponse {
+	/**
+	 * (string) one of “enabled” or “disabled”.
+	 */
+	mode: string;
+	/**
+	 * (integer) saturation level in range of 0..100
+	 */
+	value: number;
+}
+
+/**
+ * Gets the current saturation level.
+ * For devices with firmware family “D” since version 2.3.5.
+ * For devices with firmware family “F” since 2.4.2.
+ * For devices with firmware family “G” since version 2.4.21.
+ *
+ * Mode string displays if desaturation is applied. The led shines with full color regardless of what value is set if the mode is disabled. Saturation level value represents percent so 0 is completely black-and-white and 100 is full color.
+ */
+export async function getLEDSaturation(): Promise<GetLEDSaturationResponse> {
+	return await request(paths.GET_LED_SATURATION);
+}
+
+export interface SetLEDSaturationRequest {
+	/**
+	 * (string) one of “enabled”, “disabled”
+	 */
+	mode: string;
+	/**
+	 * (string) either “A” for Absolute value or “R” for Relative value
+	 */
+	type: string;
+	/**
+	 * (signed integer) saturation level in range of 0..100 if type is “A”, or change of level in range -100..100 if type is “R”
+	 */
+	value: number;
+}
+
+/**
+ * Sets the saturation level.
+ * For devices with firmware family “D” since version 2.3.5.
+ * For devices with firmware family “F” since 2.4.2.
+ * For devices with firmware family “G” since version 2.4.21.
+ *
+ * When mode is “disabled” no desaturation is applied and the led works at full color. It is not necessary to submit all the parameters, basically it would work if only value or mode is supplied. type parameter can be omitted (“A” is the default). The saturation level value is in percent so 0 is completely black-and-white and maximum meaningful value is 100. Greater values are possible but don’t seem to have any effect.
+ */
+export async function setLEDSaturation(
+	options: SetLEDSaturationRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_LED_SATURATION, {
+		method: 'POST',
+		body: options,
 	});
 }
 
@@ -621,93 +826,6 @@ export async function setLEDMovieConfig(
 		method: 'POST',
 		body: options,
 	});
-}
-
-export interface GetLEDBrightnessResponse extends CodeResponse {
-	/**
-	 * (string) one of “enabled” or “disabled”.
-	 */
-	mode: 'enabled' | 'disabled';
-
-	/**
-	 * (integer) brightness level in range of 0..100
-	 */
-	value: number;
-}
-
-/**
- * Gets the current brightness level.
- * For devices with firmware family “D” since version 2.3.5.
- * For devices with firmware family “F” since 2.4.2.
- * For devices with firmware family “G” since version 2.4.21.
- */
-export async function getLEDBrightness(): Promise<GetLEDBrightnessResponse> {
-	return await request(paths.GET_LED_BRIGHTNESS);
-}
-
-export interface SetLEDBrightnessRequest {
-	/**
-	 * (string) one of “enabled”, “disabled”
-	 */
-	mode: 'enabled' | 'disabled';
-	/**
-	 * (string) either “A” for Absolute value or “R” for Relative value
-	 */
-	type: 'A' | 'R';
-	/**
-	 * (signed integer) brightness level in range of 0..100 if type is “A”, or change of level in range -100..100 if type is “R”
-	 */
-	value: number;
-}
-
-/**
- * Sets the brightness level.
- * For devices with firmware family “D” since version 2.3.5.
- * For devices with firmware family “F” since 2.4.2.
- * For devices with firmware family “G” since version 2.4.21.
- */
-export async function setLEDBrightness(
-	options: SetLEDBrightnessRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_LED_BRIGHTNESS, {
-		method: 'POST',
-		body: options,
-	});
-}
-
-export interface GetLEDEffectsResponse extends CodeResponse {
-	/**
-	 * (integer), e.g. 5 until firmware version 2.4.30 and 15 since firmware version 2.5.6.
-	 */
-	effects_number: number;
-
-	/**
-	 * (array), since firmware version 2.5.6.
-	 */
-	unique_ids: string[];
-}
-
-/**
- * Retrieve the identities of all available predefined effects.
- *
- * Since firmware version 1.99.18.
- */
-export async function getLEDEffects(): Promise<GetLEDEffectsResponse> {
-	return await request(paths.GET_LED_EFFECTS);
-}
-
-export interface GetLEDConfigResponse extends CodeResponse {
-	strings: {
-		first_led_id: number;
-		length: number;
-	}[];
-}
-
-/**
- *
- */
-export async function getLEDConfig(): Promise<GetLEDConfigResponse> {
-	return await request(paths.GET_LED_CONFIG);
 }
 
 export interface GetSummaryResponse extends CodeResponse {
@@ -845,10 +963,6 @@ export async function setCurrentMovie(id: number): Promise<CodeResponse> {
 		method: 'POST',
 		body: { id },
 	});
-}
-
-export async function getCurrentLEDEffect() {
-	return await request(paths.GET_CURRENT_LED_EFFECT);
 }
 
 export async function throwIfErr(response: Response) {
