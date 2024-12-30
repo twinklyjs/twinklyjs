@@ -129,7 +129,7 @@ switch (command) {
 	}
 	case 'setname': {
 		const previousname = await api.getDeviceName();
-		await api.setDeviceName(positionals[1]);
+		await api.setDeviceName({ name: positionals[1] });
 		const newname = await api.getDeviceName();
 		// biome-ignore lint/style/useTemplate: <explanation>
 		console.log(previousname.name + ' has been set to ' + newname.name);
