@@ -16,23 +16,30 @@ export const paths = {
 	SET_LED_OPERATION_MODE: '/led/mode',
 	GET_LED_COLOR: '/led/color',
 	SET_LED_COLOR: '/led/color',
+	GET_LED_EFFECTS: '/led/effects',
+	GET_CURRENT_LED_EFFECT: '/led/effects/current',
+	SET_CURRENT_LED_EFFECT: '/led/effects/current',
+	GET_LED_CONFIG: '/led/config',
+	SET_LED_CONFIG: '/led/config',
 	UPLOAD_FULL_MOVIE: '/led/movie/full',
 	GET_LED_MOVIE_CONFIG: '/led/movie/config',
 	SET_LED_MOVIE_CONFIG: '/led/movie/config',
 	GET_LED_BRIGHTNESS: '/led/out/brightness',
 	SET_LED_BRIGHTNESS: '/led/out/brightness',
-	GET_LED_CONFIG: '/led/config',
-	GET_LED_EFFECTS: '/led/effects',
-	GET_CURRENT_LED_EFFECT: '/led/effects/current',
+	GET_LED_SATURATION: '/led/out/saturation',
+	SET_LED_SATURATION: '/led/out/saturation',
+	SET_LED_DRIVER_PARAMETERS: '/led/driver_params',
+	RESET_LED: '/led/reset',
+	RESET_LED2: '/led/reset2',
+	SEND_REALTIME_FRAME: '/led/rt/frame',
+	GET_FW_VERSION: '/fw/version',
+	GET_STATUS: '/status',
 	GET_NETWORK_STATUS: '/network/status',
 	SET_NETWORK_STATUS: '/network/status',
 	GET_MOVIES: '/movies',
 	GET_CURRENT_MOVIE: '/movies/current',
 	SET_CURRENT_MOVIE: '/movies/current',
 	GET_SUMMARY: '/summary',
-	RESET_LED: '/led/reset',
-	RESET_LED2: '/led/reset2',
-	GET_FW_VERSION: '/fw/version',
 };
 
 const TypedKeys = <T extends object>(obj: T): (keyof T)[] => {
@@ -99,10 +106,10 @@ export interface VerifyRequest {
  * Verify the token retrieved by Login. Successful call invalidates previous token, if it existed.
  * Since firmware version 1.99.18.
  */
-export async function verify(options: VerifyRequest): Promise<CodeResponse> {
+export async function verify(options?: VerifyRequest): Promise<CodeResponse> {
 	return await request(paths.VERIFY, {
 		method: 'POST',
-		body: options,
+		body: options ? JSON.stringify(options) : undefined,
 	});
 }
 
@@ -238,7 +245,7 @@ export async function setDeviceName(
 ): Promise<CodeResponse> {
 	return await request(paths.SET_DEVICE_NAME, {
 		method: 'POST',
-		body: options,
+		body: JSON.stringify(options),
 	});
 }
 
@@ -246,10 +253,10 @@ export async function setDeviceName(
  * Responds with requested message.
  * Since firmware version 1.99.18.
  */
-export async function echo<T>(body: T): Promise<T> {
+export async function echo<T extends object>(body: T): Promise<T> {
 	return await request(paths.ECHO, {
 		method: 'POST',
-		body,
+		body: JSON.stringify(body),
 	});
 }
 
@@ -300,7 +307,7 @@ export async function setTimer(
 ): Promise<CodeResponse> {
 	return await request(paths.SET_TIMER, {
 		method: 'POST',
-		body: options,
+		body: JSON.stringify(options),
 	});
 }
 
@@ -362,7 +369,7 @@ export async function uploadLayout(
 ): Promise<UploadLayoutResponse> {
 	return await request(paths.UPLOAD_LAYOUT, {
 		method: 'POST',
-		body: options,
+		body: JSON.stringify(options),
 	});
 }
 
@@ -443,7 +450,7 @@ export async function setLEDOperationMode(
 ): Promise<CodeResponse> {
 	return await request(paths.SET_LED_OPERATION_MODE, {
 		method: 'POST',
-		body: options,
+		body: JSON.stringify(options),
 	});
 }
 
@@ -526,7 +533,101 @@ export async function setLEDColor(
 ): Promise<CodeResponse> {
 	return await request(paths.SET_LED_COLOR, {
 		method: 'POST',
-		body: options,
+		body: JSON.stringify(options),
+	});
+}
+
+export interface GetLEDEffectsResponse extends CodeResponse {
+	/**
+	 * (integer), e.g. 5 until firmware version 2.4.30 and 15 since firmware version 2.5.6.
+	 */
+	effects_number: number;
+
+	/**
+	 * (array), since firmware version 2.5.6.
+	 */
+	unique_ids: string[];
+}
+
+/**
+ * Retrieve the identities of all available predefined effects.
+ *
+ * Since firmware version 1.99.18.
+ */
+export async function getLEDEffects(): Promise<GetLEDEffectsResponse> {
+	return await request(paths.GET_LED_EFFECTS);
+}
+
+export interface GetCurrentLEDEffectResponse extends CodeResponse {
+	/**
+	 * (string), UUID. Since firmware version 2.5.6.
+	 */
+	unique_id: string;
+	/**
+	 * (integer), e.g. 0
+	 */
+	effect_id: number;
+}
+
+export async function getCurrentLEDEffect(): Promise<GetCurrentLEDEffectResponse> {
+	return await request(paths.GET_CURRENT_LED_EFFECT);
+}
+
+export interface SetCurrentLEDEffectRequest {
+	/**
+	 * (int), id of effect, e.g. 0.
+	 */
+	effect_id: number;
+}
+
+/**
+ * Sets which effect to show when in effect mode.
+ * Since firmware version 1.99.18.
+ */
+export async function setCurrentLEDEffect(
+	options: SetCurrentLEDEffectRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_CURRENT_LED_EFFECT, {
+		method: 'POST',
+		body: JSON.stringify(options),
+	});
+}
+
+export interface LEDConfigString {
+	/**
+	 * (integer), e.g. 0
+	 */
+	first_led_id: number;
+	/**
+	 * (integer), e.g. 105
+	 */
+	length: number;
+}
+
+export interface GetLEDConfigResponse extends CodeResponse {
+	strings: LEDConfigString[];
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function getLEDConfig(): Promise<GetLEDConfigResponse> {
+	return await request(paths.GET_LED_CONFIG);
+}
+
+export interface SetLEDConfigRequest {
+	strings: LEDConfigString[];
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function setLEDConfig(
+	options: SetLEDConfigRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_LED_CONFIG, {
+		method: 'POST',
+		body: JSON.stringify(options),
 	});
 }
 
@@ -619,7 +720,7 @@ export async function setLEDMovieConfig(
 ): Promise<CodeResponse> {
 	return await request(paths.SET_LED_MOVIE_CONFIG, {
 		method: 'POST',
-		body: options,
+		body: JSON.stringify(options),
 	});
 }
 
@@ -671,43 +772,133 @@ export async function setLEDBrightness(
 ): Promise<CodeResponse> {
 	return await request(paths.SET_LED_BRIGHTNESS, {
 		method: 'POST',
-		body: options,
+		body: JSON.stringify(options),
 	});
 }
 
-export interface GetLEDEffectsResponse extends CodeResponse {
+export interface GetLEDSaturationResponse extends CodeResponse {
 	/**
-	 * (integer), e.g. 5 until firmware version 2.4.30 and 15 since firmware version 2.5.6.
+	 * (string) one of “enabled” or “disabled”.
 	 */
-	effects_number: number;
-
+	mode: string;
 	/**
-	 * (array), since firmware version 2.5.6.
+	 * (integer) saturation level in range of 0..100
 	 */
-	unique_ids: string[];
+	value: number;
 }
 
 /**
- * Retrieve the identities of all available predefined effects.
+ * Gets the current saturation level.
+ * For devices with firmware family “D” since version 2.3.5.
+ * For devices with firmware family “F” since 2.4.2.
+ * For devices with firmware family “G” since version 2.4.21.
  *
+ * Mode string displays if desaturation is applied. The led shines with full color regardless of what value is set if the mode is disabled. Saturation level value represents percent so 0 is completely black-and-white and 100 is full color.
+ */
+export async function getLEDSaturation(): Promise<GetLEDSaturationResponse> {
+	return await request(paths.GET_LED_SATURATION);
+}
+
+export interface SetLEDSaturationRequest {
+	/**
+	 * (string) one of “enabled”, “disabled”
+	 */
+	mode: string;
+	/**
+	 * (string) either “A” for Absolute value or “R” for Relative value
+	 */
+	type: string;
+	/**
+	 * (signed integer) saturation level in range of 0..100 if type is “A”, or change of level in range -100..100 if type is “R”
+	 */
+	value: number;
+}
+
+/**
+ * Sets the saturation level.
+ * For devices with firmware family “D” since version 2.3.5.
+ * For devices with firmware family “F” since 2.4.2.
+ * For devices with firmware family “G” since version 2.4.21.
+ *
+ * When mode is “disabled” no desaturation is applied and the led works at full color. It is not necessary to submit all the parameters, basically it would work if only value or mode is supplied. type parameter can be omitted (“A” is the default). The saturation level value is in percent so 0 is completely black-and-white and maximum meaningful value is 100. Greater values are possible but don’t seem to have any effect.
+ */
+export async function setLEDSaturation(
+	options: SetLEDSaturationRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_LED_SATURATION, {
+		method: 'POST',
+		body: JSON.stringify(options),
+	});
+}
+
+export interface SetLEDDriverParametersRequest {
+	t0h: number;
+	t0l: number;
+	t1h: number;
+	t1l: number;
+	tendh: number;
+	tendl: number;
+}
+
+/**
  * Since firmware version 1.99.18.
  */
-export async function getLEDEffects(): Promise<GetLEDEffectsResponse> {
-	return await request(paths.GET_LED_EFFECTS);
-}
-
-export interface GetLEDConfigResponse extends CodeResponse {
-	strings: {
-		first_led_id: number;
-		length: number;
-	}[];
+export async function setLEDDriverParameters(
+	options: SetLEDDriverParametersRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_LED_DRIVER_PARAMETERS, {
+		method: 'POST',
+		body: JSON.stringify(options),
+	});
 }
 
 /**
- *
+ * Maybe reboot?
  */
-export async function getLEDConfig(): Promise<GetLEDConfigResponse> {
-	return await request(paths.GET_LED_CONFIG);
+export async function resetLED(): Promise<CodeResponse> {
+	return await request(paths.RESET_LED);
+}
+
+/**
+ * Maybe reboot?
+ */
+export async function resetLED2(): Promise<CodeResponse> {
+	return await request(paths.RESET_LED2);
+}
+
+/**
+ * Used by application during lights mapping.
+ * Frame without any header is sent in the request body.
+ */
+export async function sendRealtimeFrame(
+	content: ArrayBuffer,
+): Promise<CodeResponse> {
+	return await request(paths.SEND_REALTIME_FRAME, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/octet-stream',
+		},
+		body: content,
+	});
+}
+
+export interface getFWVersion extends CodeResponse {
+	version: string;
+}
+
+/**
+ * Note: no authentication needed.
+ * Since firmware version 1.99.18.
+ */
+export async function getFWVersion(): Promise<getFWVersion> {
+	return await request(paths.GET_FW_VERSION);
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function getStatus(): Promise<CodeResponse> {
+	return await request(paths.GET_STATUS);
 }
 
 export interface GetSummaryResponse extends CodeResponse {
@@ -778,20 +969,6 @@ export interface GetSummaryResponse extends CodeResponse {
 	};
 }
 
-export async function resetLED(): Promise<CodeResponse> {
-	return await request(paths.RESET_LED);
-}
-
-export async function resetLED2(): Promise<CodeResponse> {
-	return await request(paths.RESET_LED2);
-}
-export interface getFWVersion extends CodeResponse {
-	version: string;
-}
-export async function getFWVersion(): Promise<getFWVersion> {
-	return await request(paths.GET_FW_VERSION);
-}
-
 export async function getSummary(): Promise<GetSummaryResponse> {
 	return await request(paths.GET_SUMMARY);
 }
@@ -834,21 +1011,24 @@ export async function getMovies(): Promise<Movie[]> {
 	return await request(paths.GET_MOVIES);
 }
 
+export interface SetCurrentMovieRequest {
+	/**
+	 * (int), id of movie, in range 0 .. 15.
+	 */
+	id: number;
+}
+
 /**
  * Sets which movie to show when in movie mode.
  * Since firmware version 2.5.6.
- * @param id
- * @returns
  */
-export async function setCurrentMovie(id: number): Promise<CodeResponse> {
+export async function setCurrentMovie(
+	options: SetCurrentMovieRequest,
+): Promise<CodeResponse> {
 	return await request(paths.SET_CURRENT_MOVIE, {
 		method: 'POST',
-		body: { id },
+		body: JSON.stringify(options),
 	});
-}
-
-export async function getCurrentLEDEffect() {
-	return await request(paths.GET_CURRENT_LED_EFFECT);
 }
 
 export async function throwIfErr(response: Response) {
@@ -874,16 +1054,15 @@ export class FetchError extends Error {
  * @param {*} options
  * @returns The data from the successful request
  */
-
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-async function request(url: string, options: any = {}) {
+async function request(url: string, options: RequestInit = {}) {
 	if (!tokenData) {
 		tokenData = await login();
 		await request(paths.VERIFY, { method: 'POST' });
 	}
 
 	options.headers = options.headers ?? {};
-	options.headers['X-Auth-Token'] = tokenData.authentication_token;
+	(options.headers as Record<string, string>)['X-Auth-Token'] =
+		tokenData.authentication_token;
 
 	if (typeof options.body === 'object') {
 		options.body = JSON.stringify(options.body);

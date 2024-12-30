@@ -69,7 +69,7 @@ switch (command) {
 	case 'setmovie': {
 		await api.setLEDOperationMode({ mode: api.LEDOperationMode.MOVIE });
 		const movieId = Number(positionals[1]);
-		const setmovie = await api.setCurrentMovie(movieId);
+		const setmovie = await api.setCurrentMovie({ id: movieId });
 		console.log(setmovie);
 		break;
 	}
