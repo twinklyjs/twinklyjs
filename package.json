@@ -7,15 +7,18 @@
   "bin": {
     "twinkly": "./build/src/cli.js"
   },
+  "lint-staged": {
+    "*.ts": "npm run fix"
+  },
   "scripts": {
-    "prestart": "npm run build",
     "start": "node build/src/app.js",
     "pretest": "npm run build",
     "test": "node build/test/test.js",
     "build": "tsc",
     "fix": "biome check --write .",
     "lint": "biome check .",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "prepare": "husky && npm run build"
   },
   "keywords": [],
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
@@ -23,6 +26,8 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
     "typescript": "^5.7.2"
   },
   "dependencies": {
