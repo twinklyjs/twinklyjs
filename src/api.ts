@@ -463,15 +463,17 @@ export interface GetSummaryResponse extends CodeResponse {
 	};
 }
 
-export async function resetLED() {
+export async function resetLED(): Promise<CodeResponse> {
 	return await request(paths.RESET_LED);
 }
 
-export async function resetLED2() {
+export async function resetLED2(): Promise<CodeResponse> {
 	return await request(paths.RESET_LED2);
 }
-
-export async function getFWVersion() {
+export interface getFWVersion extends CodeResponse {
+	version: string;
+}
+export async function getFWVersion(): Promise<getFWVersion> {
 	return await request(paths.GET_FW_VERSION);
 }
 
