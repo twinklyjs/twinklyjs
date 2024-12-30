@@ -471,8 +471,7 @@ export async function resetLED2(): Promise<CodeResponse> {
 	return await request(paths.RESET_LED2);
 }
 export interface getFWVersion extends CodeResponse {
-
-	version:string;
+	version: string;
 }
 export async function getFWVersion(): Promise<getFWVersion> {
 	return await request(paths.GET_FW_VERSION);
