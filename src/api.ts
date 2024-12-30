@@ -48,6 +48,9 @@ export function init(ip: string) {
 }
 
 let tokenData: LoginResponse;
+export function getToken() {
+	return tokenData.authentication_token;
+}
 
 export interface CodeResponse {
 	code: number;

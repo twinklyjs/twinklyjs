@@ -5,7 +5,7 @@ This is an unofficial (and incomplete!) JavaScript implementation for [Twinkly L
 ## Basic usage
 
 ```js
-import * as api from './api.js';
+import * as api from '@twinklyjs/twinkly';
 
 api.init('10.0.0.187');
 const details = await api.getDeviceDetails();
@@ -20,11 +20,18 @@ console.log(data);
 ### Discovery
 
 ```js
-import {discover} from './discovery.js';
+import {discover} from '@twinklyjs/twinkly';
 
 const devices = await discover();
 console.log(devices);
 ```
+
+## Examples
+
+| Example | Description |
+|--|---|
+| [realtime](./examples/realtime.js) | Use the realtime UPD API to send light frames |
+|-|-|
 
 ## Contributing
 

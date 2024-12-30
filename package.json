@@ -1,8 +1,9 @@
 {
-  "name": "twink",
-  "version": "1.0.0",
-  "description": "",
-  "main": "src/app.ts",
+  "name": "@twinklyjs/twinkly",
+  "version": "0.0.1",
+  "description": "A Twinkly API client",
+  "main": "build/src/index.js",
+  "types": "build/src/index.d.ts",
   "type": "module",
   "bin": {
     "twinkly": "./build/src/cli.js"
