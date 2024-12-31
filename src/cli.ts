@@ -83,7 +83,7 @@ program
 		const ip = await requireIP(options.ip);
 		api.init(ip);
 		await api.setLEDOperationMode({ mode: api.LEDOperationMode.MOVIE });
-		const result = await api.setCurrentMovie({id:id});
+		const result = await api.setCurrentMovie({ id: id });
 		console.log(result);
 	});
 
@@ -147,4 +147,3 @@ program
 	});
 
 program.parse(process.argv);
-	
