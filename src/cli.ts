@@ -2,14 +2,14 @@
 import fs from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { parseArgs } from 'node:util';
+import { Command } from 'commander';
 import envPaths from 'env-paths';
 import * as api from './api.js';
 import { discover } from './discovery.js';
 
+const program = new Command();
 const configDir = envPaths('twinklyjs').config;
 const configFile = path.join(configDir, 'config.json');
-
 interface Config {
 	ip: string;
 }
@@ -17,175 +17,134 @@ interface Config {
 async function getConfig(): Promise<Config | null> {
 	try {
 		const fileContents = await readFile(configFile, 'utf-8');
-		const config = JSON.parse(fileContents);
-		return config;
-	} catch (err) {
+		return JSON.parse(fileContents);
+	} catch {
 		return null;
 	}
 }
 
-const { values, positionals } = parseArgs({
-	options: {
-		ip: { type: 'string' },
-		help: { type: 'boolean' },
-	},
-	tokens: true,
-	allowPositionals: true,
-});
+async function saveConfig(ip: string) {
+	if (!fs.existsSync(configDir)) {
+		await mkdir(configDir, { recursive: true });
+	}
+	await writeFile(configFile, JSON.stringify({ ip }), 'utf-8');
+}
 
-if (positionals.length === 0 || values.help) {
-	showHelp();
+async function requireIP(ip: string | undefined): Promise<string> {
+	if (ip) return ip;
+
+	const config = await getConfig();
+	if (config?.ip) return config.ip;
+
+	console.error('Error: No IP address provided or saved in the config.');
 	process.exit(1);
 }
 
-const command = positionals[0];
+program
+	.name('twinkly')
+	.description('CLI tool for managing Twinkly smart lights')
+	.version('1.0.0');
 
-const { ip } = values;
-function requireIP() {
-	if (!ip) {
-		showHelp();
-		process.exit(1);
-	}
-	api.init(ip);
-}
-
-const config = await getConfig();
-if (!config) {
-	if (!['discover', 'config'].includes(command)) {
-		requireIP();
-	}
-} else {
-	if (ip) {
-		api.init(ip);
-	} else {
-		if (!config?.ip) {
-			showHelp();
-			process.exit(-1);
-		}
-		api.init(config.ip);
-	}
-}
-switch (command) {
-	case 'setmovie': {
-		await api.setLEDOperationMode({ mode: api.LEDOperationMode.MOVIE });
-		const movieId = Number(positionals[1]);
-		const setmovie = await api.setCurrentMovie({ id: movieId });
-		console.log(setmovie);
-		break;
-	}
-	case 'getmovie': {
-		const movie = await api.getCurrentMovie();
-		console.log(movie);
-		break;
-	}
-	case 'getmovies': {
-		const movies = await api.getMovies();
-		console.log(movies);
-		break;
-	}
-	case 'getsummary': {
-		const summary = await api.getSummary();
-		console.log(summary);
-		break;
-	}
-	case 'discover': {
+program
+	.command('discover')
+	.description('Discover Twinkly devices on the network')
+	.action(async () => {
 		const devices = await discover();
 		console.log(devices);
-		break;
-	}
-	case 'setbrightness': {
-		const setbrightness = await api.setLEDBrightness({
-			mode: positionals[1] as 'enabled' | 'disabled',
-			type: positionals[2] as 'A' | 'R',
-			value: Number(positionals[3]),
-		});
-		console.log(setbrightness);
-		break;
-	}
-	case 'setopmode': {
-		const mode = positionals[1] as api.LEDOperationMode;
-		const setopmode = await api.setLEDOperationMode({ mode });
-		console.log(setopmode);
-		break;
-	}
-	case 'setcolor': {
-		const setcolor = await api.setLEDColor({
-			red: Number(positionals[1]),
-			green: Number(positionals[2]),
-			blue: Number(positionals[3]),
-		});
-		console.log(setcolor);
-		break;
-	}
-	case 'getfwversion': {
-		const getfw = await api.getFWVersion();
-		console.log(getfw);
-		break;
-	}
-	case 'getname': {
-		const nameconstant = await api.getDeviceName();
-		console.log(`device name is ${nameconstant.name}`);
-		break;
-	}
-	case 'setname': {
-		const previousname = await api.getDeviceName();
-		await api.setDeviceName({ name: positionals[1] });
-		const newname = await api.getDeviceName();
-		// biome-ignore lint/style/useTemplate: <explanation>
-		console.log(previousname.name + ' has been set to ' + newname.name);
-		break;
-	}
-	case 'config': {
-		const getorset = positionals[1];
+	});
 
-		switch (getorset) {
+program
+	.command('getmovie')
+	.description('Get the current movie')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		const movie = await api.getCurrentMovie();
+		console.log(movie);
+	});
+
+program
+	.command('getmovies')
+	.description('Get movies installed.')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		const movies = await api.getMovies();
+		console.log(movies);
+	});
+
+program
+	.command('setmovie <id>')
+	.description('Set the current movie')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (id, options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		await api.setLEDOperationMode({ mode: api.LEDOperationMode.MOVIE });
+		const result = await api.setCurrentMovie({id:id});
+		console.log(result);
+	});
+
+program
+	.command('setcolor')
+	.description('Set LED color in RGB')
+	.argument('<red>')
+	.argument('<green>')
+	.argument('<blue>')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (red, green, blue, options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		//Ignore: the response from method.
+		const result = await api.setLEDColor({
+			red: Number(red),
+			green: Number(green),
+			blue: Number(blue),
+		});
+		console.log(result);
+	});
+
+program
+	.command('setopmode')
+	.description('Set the LED operation mode')
+	.argument('<mode>')
+
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (mode, options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		//Ignore: the response from method.
+		const result = await api.setLEDOperationMode({
+			mode: mode as api.LEDOperationMode,
+		});
+		console.log(result);
+	});
+
+program
+	.command('config <action> [value]')
+	.description('Manage configuration settings')
+	.action(async (action, value) => {
+		switch (action) {
 			case 'getip': {
 				const config = await getConfig();
-				if (config) {
-					console.log(config?.ip);
-				} else {
-					console.log('No IP address set');
-				}
+				console.log(config?.ip || 'No IP address set');
 				break;
 			}
 			case 'setip': {
-				const newIP = positionals[2];
-				let config = await getConfig();
-				if (config) {
-					config.ip = newIP;
-				} else {
-					config = { ip: newIP };
-					if (!fs.existsSync(configDir)) {
-						await mkdir(configDir, { recursive: true });
-					}
+				if (!value) {
+					console.error('Error: No IP address provided.');
+					process.exit(1);
 				}
-				await writeFile(configFile, JSON.stringify(config), 'utf-8');
-				console.log('Config saved.');
+				await saveConfig(value);
+				console.log('IP address saved.');
 				break;
 			}
+			default:
+				console.error('Invalid action. Use "getip" or "setip".');
 		}
-		break;
-	}
-	default:
-		showHelp();
-		break;
-}
+	});
 
-function showHelp() {
-	const help = `Usage: twinkly <command> [options]
-Commands:
-	discover - Discover Twinkly devices on the network
-	getmovie - Get the current movie
-	getmovies - Get all movies
-	setmovie <id> - Set the current movie
-	getsummary - Get the summary of the device
-	setbrightness - Set enabled or disabled, A or R, and brightness from 0..100 if type set to A and -100..100 if type set to R'
-	setopmode - Set LED operation mode'
-	setcolor - Set LED color in RGB if in color opmode'
-	getfwversion - Get the current firmware version'
-
-Options:
-	--ip <ip> - The IP address of the Twinkly device. Required.
-`;
-	console.log(help);
-}
+program.parse(process.argv);
+	
