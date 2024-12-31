@@ -34,12 +34,32 @@ export const paths = {
 	SEND_REALTIME_FRAME: '/led/rt/frame',
 	GET_FW_VERSION: '/fw/version',
 	GET_STATUS: '/status',
-	GET_NETWORK_STATUS: '/network/status',
-	SET_NETWORK_STATUS: '/network/status',
+	UPDATE_FIRMWARE: '/fw/update',
+	UPLOAD_FIRST_STAGE_FIRMWARE: '/fw/0/update',
+	UPLOAD_SECOND_STAGE_FIRMWARE: '/fw/1/update',
 	GET_MOVIES: '/movies',
+	DELETE_MOVIES: '/movies',
+	CREATE_MOVIE_ENTRY: '/movies/new',
+	UPLOAD_MOVIE: '/movies/full',
 	GET_CURRENT_MOVIE: '/movies/current',
 	SET_CURRENT_MOVIE: '/movies/current',
+	INITIATE_WIFI_NETWORK_SCAN: '/network/scan',
+	GET_NETWORK_SCAN_RESULTS: '/network/scan_results',
+	GET_NETWORK_STATUS: '/network/status',
+	SET_NETWORK_STATUS: '/network/status',
+	GET_MQTT_CONFIG: '/mqtt/config',
+	SET_MQTT_CONFIG: '/mqtt/config',
+	GET_PLAYLIST: '/playlist',
+	CREATE_PLAYLIST: '/playlist',
+	DELETE_PLAYLIST: '/playlist',
+	GET_CURRENT_PLAYLIST_ENTRY: '/playlist/current',
+	SET_CURRENT_PLAYLIST_ENTRY: '/playlist/current',
+	GET_MIC_CONFIG: '/mic/config',
+	GET_MIC_SAMPLE: '/mic/sample',
 	GET_SUMMARY: '/summary',
+	GET_MUSIC_DRIVERS: '/music/drivers',
+	GET_MUSIC_DRIVERS_SETS: '/music/drivers/sets',
+	GET_CURRENT_MUSIC_DRIVERSET: '/music/drivers/sets/current',
 };
 
 const TypedKeys = <T extends object>(obj: T): (keyof T)[] => {
@@ -901,6 +921,633 @@ export async function getStatus(): Promise<CodeResponse> {
 	return await request(paths.GET_STATUS);
 }
 
+export interface UpdateFirmwareRequest {
+	checksum: {
+		/**
+		 * (string) SHA1 digest of first stage.
+		 */
+		stage0_sha1sum: string;
+		/**
+		 * (string) SHA1 digest of second stage. Only used for generation I devices.
+		 */
+		stage1_sha1sum?: string;
+	};
+}
+
+/**
+ * Initiates firmware update.
+ * Since firmware version 1.99.18.
+ */
+export async function updateFirmware(
+	options: UpdateFirmwareRequest,
+): Promise<CodeResponse> {
+	return await request(paths.UPDATE_FIRMWARE, {
+		method: 'POST',
+		body: JSON.stringify(options),
+	});
+}
+
+export interface UploadFirstStageFirmwareResponse {
+	/**
+	 * SHA1 digest of uploaded firmware.
+	 */
+	sha1sum: string;
+}
+
+/**
+ * First stage of firmware is uploaded in body of the request.
+ * Since firmware version 1.99.18.
+ */
+export async function uploadFirstStageFirmware(
+	content: ArrayBuffer,
+): Promise<UploadFirstStageFirmwareResponse> {
+	return await request(paths.UPLOAD_FIRST_STAGE_FIRMWARE, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/octet-stream',
+		},
+		body: content,
+	});
+}
+
+export interface UploadSecondStageFirmwareResponse {
+	/**
+	 * SHA1 digest of uploaded firmware.
+	 */
+	sha1sum: string;
+}
+
+/**
+ * Second stage of firmware is uploaded in body of the request.
+ * Since firmware version 1.99.18.
+ * Used only for generation I devices.
+ */
+export async function uploadSecondStageFirmware(
+	content: ArrayBuffer,
+): Promise<UploadSecondStageFirmwareResponse> {
+	return await request(paths.UPLOAD_SECOND_STAGE_FIRMWARE, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/octet-stream',
+		},
+		body: content,
+	});
+}
+
+export interface Movie {
+	/**
+	 * (integer), e.g. 0
+	 */
+	id: number;
+	/**
+	 * (integer), e.g. 0
+	 */
+	name: string;
+	/**
+	 * (string), UUID
+	 */
+	unique_id: string;
+	/**
+	 * (string), e.g “rgbw_raw” for firmware family “G” or “rgb_raw” for firmware family “F”
+	 */
+	descriptor_type: string;
+	/**
+	 * (integer), e.g. 210
+	 */
+	leds_per_frame: number;
+	/**
+	 * (integer), e.g. 4
+	 */
+	frames_number: number;
+	/**
+	 * (integer), e.g. 0
+	 */
+	fps: number;
+}
+
+export interface GetMoviesResponse extends CodeResponse {
+	movies: Movie[];
+	/**
+	 * (integer), e.g. 992
+	 */
+	available_frames: number;
+	/**
+	 * (integer), e.g. 992
+	 */
+	max_capacity: number;
+}
+
+/**
+ * Retrieve the identities and parameters of all uploaded movies.
+ * Available since firmware version 2.5.6.
+ */
+export async function getMovies(): Promise<GetMoviesResponse> {
+	return await request(paths.GET_MOVIES);
+}
+
+/**
+ * Remove all uploaded movies.
+ * Any existing playlist will be removed as well. This call only works if the device is not in movie or playlist mode.
+ * Available since firmware version 2.5.6.
+ */
+export async function deleteMovies(): Promise<CodeResponse> {
+	return await request(paths.DELETE_MOVIES, {
+		method: 'DELETE',
+	});
+}
+
+export interface CreateMovieEntryRequest {
+	/**
+	 * (string)
+	 */
+	name: string;
+	/**
+	 * (string), UUID
+	 */
+	unique_id: string;
+	/**
+	 * (string), e.g “rgbw_raw”,
+	 */
+	descriptor_type: string;
+	/**
+	 * (integer), e.g. 210
+	 */
+	leds_per_frame: string;
+	/**
+	 * (integer), e.g. 4
+	 */
+	frames_number: number;
+	/**
+	 * (integer), e.g. 0
+	 */
+	fps: number;
+}
+
+/**
+ * Available since firmware version 2.5.6.
+ */
+export async function createMovieEntry(
+	options: CreateMovieEntryRequest,
+): Promise<CodeResponse> {
+	return await request(paths.CREATE_MOVIE_ENTRY, {
+		method: 'POST',
+		body: JSON.stringify(options),
+	});
+}
+
+/**
+ * Available since firmware version 2.5.6.
+ * Effect is received in body of the request. This call must be preceeded by a call to movies/new.
+ */
+export async function uploadMovie(content: ArrayBuffer): Promise<CodeResponse> {
+	return await request(paths.UPLOAD_MOVIE, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/octet-stream',
+		},
+		body: content,
+	});
+}
+
+export interface GetCurrentMovieResponse extends CodeResponse {
+	/**
+	 * (integer), numeric id of movie, in range 0 .. 15
+	 */
+	id: number;
+
+	/**
+	 * (string), UUID of movie.
+	 */
+	unique_id: string;
+
+	/**
+	 * (string), name of movie.
+	 */
+	name: string;
+}
+
+/**
+ * Gets the id of the movie shown when in movie mode.
+ */
+export async function getCurrentMovie(): Promise<GetCurrentMovieResponse> {
+	return await request(paths.GET_CURRENT_MOVIE);
+}
+
+export interface SetCurrentMovieRequest {
+	/**
+	 * (int), id of movie, in range 0 .. 15.
+	 */
+	id: number;
+}
+
+/**
+ * Sets which movie to show when in movie mode.
+ * Since firmware version 2.5.6.
+ */
+export async function setCurrentMovie(
+	options: SetCurrentMovieRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_CURRENT_MOVIE, {
+		method: 'POST',
+		body: JSON.stringify(options),
+	});
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function InitiateWiFiNetworkScan(): Promise<CodeResponse> {
+	return await request(paths.INITIATE_WIFI_NETWORK_SCAN);
+}
+
+/**
+ * Response seems to correspond with AT command CWLAP.
+ */
+export interface GetWiFiScanResultsResponse extends CodeResponse {
+	networks: {
+		ssid: string;
+		mac: string;
+		/**
+		 * (number) negative number
+		 */
+		rssi: number;
+		channel: number;
+		/**
+		 * One of numbers 0 (Open), 1 (WEP), 2 (WPA-PSK), 3 (WPA2-PSK), 4 (WPA-PSK + WPA2-PSK), 5 (WPA2-EAP).
+		 */
+		enc: 0 | 1 | 2 | 3 | 4 | 5;
+	}[];
+}
+
+/**
+ * Since firmware version 1.99.18.
+ */
+export async function getWiFiScanResults(): Promise<GetWiFiScanResultsResponse> {
+	return await request(paths.GET_NETWORK_SCAN_RESULTS);
+}
+
+export interface GetNetworkStatusResponse extends CodeResponse {
+	/**
+	 * (enum) 1 or 2
+	 */
+	mode: 1 | 2;
+	/**
+	 * (object)
+	 */
+	station: {
+		/**
+		 * (string), SSID of a WiFi network to connect to
+		 */
+		ssid: string;
+		/**
+		 * (string), IP address of the device
+		 */
+		ip: string;
+		/**
+		 * (string), IP address of the gateway
+		 */
+		gw: string;
+		/**
+		 * (string), subnet mask
+		 */
+		mask: string;
+		/**
+		 * (integer), status of the network connection: 5 = connected, 255 = AP is used
+		 */
+		status?: number;
+	};
+	/**
+	 * (object)
+	 */
+	ap: {
+		/**
+		 * (string), SSID of the device
+		 */
+		ssid: string;
+		/**
+		 * (integer), channel number
+		 */
+		channel: number;
+		/**
+		 * (string), IP address
+		 */
+		ip: string;
+		/**
+		 * (enum), 0 for no encryption, 2 for WPA1, 3 for WPA2, 4 for WPA1+WPA2
+		 */
+		enc: 0 | 2 | 3 | 4;
+		/**
+		 * (integer), default 0. Since firmware version 2.4.25.
+		 */
+		ssid_hidden: number;
+		/**
+		 * (integer), default 4. Since firmware version 2.4.25.
+		 */
+		max_connection: number;
+		/**
+		 * (integer), either hidden or set to 1 if default password for AP was changed.
+		 */
+		password_changed: number;
+	};
+}
+
+/**
+ * Gets network mode operation.
+ * Since firmware version 1.99.18.
+ */
+export async function getNetworkStatus(): Promise<GetNetworkStatusResponse> {
+	return await request(paths.GET_NETWORK_STATUS);
+}
+
+export interface SetNetworkStatusRequest {
+	/**
+	 * (enum), required: 1 or 2
+	 */
+	mode: 1 | 2;
+	/**
+	 * (object) optional, if mode set to 1 this parameter could provide additional details.
+	 */
+	station?: {
+		/**
+		 * (integer) 1
+		 */
+		dhcp: number;
+		/**
+		 * (string) SSID of a WiFi network until firmare version 2.4.25
+		 */
+		ssid: string;
+		/**
+		 * (string) encrypted SSID of a WiFi network since firmare version 2.4.30.
+		 */
+		encssid: string;
+		/**
+		 * (string) encrypted password.
+		 */
+		encpassword: string;
+	};
+	/**
+	 * (object) optional, if mode set to 2 this parameter could provide additional details.
+	 */
+	ap?: {
+		/**
+		 * (string), required SSID of a WiFi network
+		 */
+		ssid: string;
+		/**
+		 * (string), optional encrypted password.
+		 */
+		encpassword?: string;
+		/**
+		 * (string), optional plaintext password. Since firmware version 2.4.25 (?).
+		 */
+		password?: string;
+		/**
+		 * (enum), optional type of encryption. See above in Get network status. Defaults to 0 if not part of the request. If a request has enc value 1, get will return 0 as well.
+		 */
+		enc?: number;
+		/**
+		 * (integer), optional
+		 */
+		channel?: number;
+		/**
+		 * (integer), optional, 0 to broadcast SSID, 1 to hide. Since firmware version 2.4.25.
+		 */
+		ssid_hidden?: number;
+		/**
+		 * (integer), optional, value from 1 to 4. Since firmware version 2.4.25.
+		 */
+		max_connection: number;
+	};
+}
+
+export async function setNetworkStatus(
+	options: SetNetworkStatusRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_NETWORK_STATUS, {
+		method: 'POST',
+		body: JSON.stringify(options),
+	});
+}
+
+export interface GetMQTTConfigResponse extends CodeResponse {
+	/**
+	 * (string), hostname of broker. By default mqtt.twinkly.com.
+	 */
+	broker_host: string;
+	/**
+	 * (integer), destination port of broker. By default “1883”.
+	 */
+	broker_port: number;
+	/**
+	 * (string), see section MQTT Client ID in Protocol details.
+	 */
+	client_id: string;
+	/**
+	 * (bool), by default “False”.  For firmware family "D" only.
+	 */
+	encryption_key_set?: boolean;
+	/**
+	 * (integer), by default “180” for firmware family "D", and defaults to
+	 * "60" for firmware family "G" and above.
+	 */
+	keep_alive_interval: number;
+	/**
+	 * (string), by default “twinkly_noauth” for firmware family "D", and defaults to
+	 * "twinkly32" for firmware family "G" and above
+	 */
+	user: string;
+	/**
+	 * (string), only in firmware family “F” since 2.4.2 until 2.4.14.
+	 */
+	password?: string;
+}
+
+/**
+ * For devices with firmware family “D” since version 2.0.22.
+ * For devices with firmware family “F” since version 2.4.2.
+ * For devices with firmware family “G” since version 2.4.21.
+ */
+export async function getMQTTConfig(): Promise<GetMQTTConfigResponse> {
+	return await request(paths.GET_MQTT_CONFIG);
+}
+
+/**
+ * For firmware family “D” since firmware version 2.0.22 and firmware family “G” since firmware version 2.4.21 and firmware family “F” since version 2.4.2:
+ */
+export interface SetMQTTConfigRequest {
+	/**
+	 * (string), optional hostname of a broker
+	 */
+	broker_host?: string;
+	/**
+	 * (string), optional
+	 */
+	client_id?: string;
+	/**
+	 * (integer), optional
+	 */
+	keep_alive_interval?: number;
+	/**
+	 * (string), optional
+	 */
+	user?: string;
+}
+
+/**
+ * Since firmware version: 2.0.22
+ */
+export async function setMQTTConfig(
+	options: SetMQTTConfigRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_MQTT_CONFIG, {
+		method: 'POST',
+		body: JSON.stringify(options),
+	});
+}
+
+export interface PlaylistEntry {
+	/**
+	 * (integer), in seconds, e.g. 10
+	 */
+	duration: number;
+	/**
+	 * (string), UUID
+	 */
+	unique_id: number;
+}
+
+export interface GetPlaylistResponse extends CodeResponse {
+	entries: PlaylistEntry[];
+}
+
+/**
+ * Available since firmware version 2.5.6.
+ */
+export async function getPlaylist(): Promise<GetPlaylistResponse> {
+	return await request(paths.GET_PLAYLIST);
+}
+
+export interface CreatePlaylistRequest {
+	entries: PlaylistEntry[];
+}
+
+/**
+ * Available since firmware version 2.5.6.
+ */
+export async function createPlaylist(
+	options: CreatePlaylistRequest,
+): Promise<CodeResponse> {
+	return await request(paths.CREATE_PLAYLIST, {
+		method: 'POST',
+		body: JSON.stringify(options),
+	});
+}
+
+/**
+ * Available since firmware version 2.5.6.
+ */
+export async function deletePlaylist(): Promise<CodeResponse> {
+	return await request(paths.DELETE_PLAYLIST, {
+		method: 'DELETE',
+	});
+}
+
+export interface GetCurrentPlaylistEntryResponse extends CodeResponse {
+	/**
+	 * (integer), 0
+	 */
+	id: number;
+	/**
+	 * (string), UUID
+	 */
+	unique_id: string;
+	/**
+	 * (string)
+	 */
+	name: string;
+}
+
+/**
+ * Gets which movie is currently played in playlist mode.
+ * Available since firmware version 2.5.6.
+ */
+export async function getCurrentPlaylistEntry(): Promise<GetCurrentPlaylistEntryResponse> {
+	return await request(paths.GET_CURRENT_PLAYLIST_ENTRY);
+}
+
+export interface SetCurrentPlaylistEntryRequest {
+	/**
+	 * (int), id of movie to jump to, e.g. 0.
+	 */
+	id: number;
+}
+
+/**
+ * Sets which movie to jump to when in playlist mode.
+ * When entering playlist mode, it always starts from the first entry in the playlist, so this call is only useful when already in playlist mode.
+ * Available since firmware version 2.5.6.
+ */
+export async function setCurrentPlaylistEntry(
+	options: SetCurrentPlaylistEntryRequest,
+): Promise<CodeResponse> {
+	return await request(paths.SET_CURRENT_PLAYLIST_ENTRY, {
+		method: 'POST',
+		body: JSON.stringify(options),
+	});
+}
+
+export interface GetMicConfigResponse extends CodeResponse {
+	/**
+	 * array of objects
+	 */
+	filters: unknown[];
+	/**
+	 * (integer), default 0
+	 */
+	silence_threshold: number;
+	/**
+	 * (integer), default 0
+	 */
+	active_range: number;
+	/**
+	 * (integer), default 255
+	 */
+	brightness_depth: number;
+	/**
+	 * (integer), default 255
+	 */
+	hue_depth: number;
+	/**
+	 * (integer), default 255
+	 */
+	value_depth: number;
+	/**
+	 * (integer), default 255
+	 */
+	saturation_depth: number;
+}
+
+/**
+ * Since firmware version 2.4.2 until 2.4.30.
+ */
+export async function getMicConfig(): Promise<GetMicConfigResponse> {
+	return await request(paths.GET_MIC_CONFIG);
+}
+
+export interface GetMicSampleResponse extends CodeResponse {
+	/**
+	 * (integer), e.g. 0
+	 */
+	sampled_value: number;
+}
+
+/**
+ * Since firmware version 2.4.2 until 2.4.30.
+ */
+export async function getMicSample(): Promise<GetMicSampleResponse> {
+	return await request(paths.GET_MIC_SAMPLE);
+}
+
 export interface GetSummaryResponse extends CodeResponse {
 	/**
 	 * (object) corresponds to response of Get LED operation mode without code.
@@ -969,68 +1616,89 @@ export interface GetSummaryResponse extends CodeResponse {
 	};
 }
 
+/**
+ * Since firmware version 2.5.6.
+ */
 export async function getSummary(): Promise<GetSummaryResponse> {
 	return await request(paths.GET_SUMMARY);
 }
 
-export interface GetCurrentMovieResponse extends CodeResponse {
+export interface GetMusicDriversResponse extends CodeResponse {
 	/**
-	 * (integer), numeric id of movie, in range 0 .. 15
+	 * (integer), e.g. 26
 	 */
-	id: number;
+	drivers_number: number;
 
 	/**
-	 * (string), UUID of movie.
+	 * (array), each entry is UUID string
 	 */
-	unique_id: string;
-
-	/**
-	 * (string), name of movie.
-	 */
-	name: string;
+	unique_ids: string[];
 }
 
 /**
- * Gets the id of the movie shown when in movie mode.
- */
-export async function getCurrentMovie(): Promise<GetCurrentMovieResponse> {
-	return await request(paths.GET_CURRENT_MOVIE);
-}
-
-export interface Movie {
-	id: number;
-	name: string;
-	unique_id: string;
-	descriptor_type: string;
-	leds_per_frame: number;
-	frames_number: number;
-	fps: number;
-}
-
-export async function getMovies(): Promise<Movie[]> {
-	return await request(paths.GET_MOVIES);
-}
-
-export interface SetCurrentMovieRequest {
-	/**
-	 * (int), id of movie, in range 0 .. 15.
-	 */
-	id: number;
-}
-
-/**
- * Sets which movie to show when in movie mode.
  * Since firmware version 2.5.6.
  */
-export async function setCurrentMovie(
-	options: SetCurrentMovieRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_CURRENT_MOVIE, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
+export async function getMusicDrivers(): Promise<GetMusicDriversResponse> {
+	return await request(paths.GET_MUSIC_DRIVERS);
 }
 
+export interface MusicDriversSet {
+	/**
+	 * (integer)
+	 */
+	id: number;
+	/**
+	 * (integer)
+	 */
+	count: number;
+	/**
+	 * (array), each entry is UUID string
+	 */
+	unique_ids: string[];
+}
+
+export interface GetMusicDriversSetsResponse extends CodeResponse {
+	/**
+	 * (integer), e.g. 26
+	 */
+	current: number;
+	/**
+	 * (integer), e.g. 3
+	 */
+	count: number;
+
+	driversets: MusicDriversSet[];
+}
+
+/**
+ * Since firmware version 2.5.6.
+ */
+export async function getMusicDriversSets(): Promise<GetMusicDriversSetsResponse> {
+	return await request(paths.GET_MUSIC_DRIVERS_SETS);
+}
+
+export interface GetCurrentMusicDriversetResponse extends CodeResponse {
+	/**
+	 * (integer), e.g. 0
+	 */
+	driverset_id: number;
+}
+
+/**
+ * Since firmware version 2.5.6.
+ */
+export async function getCurrentMusicDriverset(): Promise<GetCurrentMusicDriversetResponse> {
+	return await request(paths.GET_CURRENT_MUSIC_DRIVERSET);
+}
+
+/**
+ * UTILITY FUNCTIONS
+ */
+
+/**
+ * Check if a given response is not OK, and if so throw a
+ * detailed exception.
+ */
 export async function throwIfErr(response: Response) {
 	if (response.ok) {
 		return;
