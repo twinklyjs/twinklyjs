@@ -4,7 +4,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Command } from 'commander';
 import envPaths from 'env-paths';
-import schedule from 'node-schedule';
 import * as api from './api.js';
 import { discover } from './discovery.js';
 

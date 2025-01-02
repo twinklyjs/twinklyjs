@@ -27,14 +27,11 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.2",
-    "@types/node-schedule": "^2.1.7",
-    "@types/yargs": "^17.0.33",
     "husky": "^9.1.7",
     "lint-staged": "^15.3.0",
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "broadcast-address": "^1.0.2",
     "commander": "^13.0.0",
     "env-paths": "^3.0.0"
   }
