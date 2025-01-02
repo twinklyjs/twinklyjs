@@ -76,14 +76,15 @@ program
 	});
 
 program
-	.command('setmovie <id>')
-	.description('Set the current movie')
+	.command('setmovie')
+	.description('Set LED color in RGB')
+	.argument('<id>')
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (id, options) => {
 		const ip = await requireIP(options.ip);
 		api.init(ip);
 		await api.setLEDOperationMode({ mode: api.LEDOperationMode.MOVIE });
-		const result = await api.setCurrentMovie({ id: id });
+		const result = await api.setCurrentMovie({ id: Number(id) });
 		console.log(result);
 	});
 
@@ -115,7 +116,7 @@ program
 	.action(async (mode, options) => {
 		const ip = await requireIP(options.ip);
 		api.init(ip);
-		//Ignore: the response from method.
+
 		const result = await api.setLEDOperationMode({
 			mode: mode as api.LEDOperationMode,
 		});
