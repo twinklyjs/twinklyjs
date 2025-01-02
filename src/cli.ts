@@ -47,10 +47,33 @@ program
 
 program
 	.command('discover')
-	.description('Discover Twinkly devices on the network')
-	.action(async () => {
-		const devices = await discover();
-		console.log(devices);
+	.description('Discover Twinkly devices on the network.')
+	.addHelpText(
+		'after',
+		'If no broadcast address is provided, the tool will attempt to discover devices on all network interfaces.',
+	)
+	.option(
+		'--timeout <timeout>',
+		'The time to wait for responses in milliseconds',
+		'1000',
+	)
+	.option(
+		'--broadcast-address <address>',
+		'The broadcast address to use for discovery',
+	)
+	.action(async (options) => {
+		const devices = await discover({
+			timeout: Number(options.timeout),
+			broadcastAddress: options.broadcastAddress,
+		});
+		if (devices.length > 0) {
+			console.log(devices);
+			console.log(
+				`To configure your default device, run "twinkly config setip <ip>"`,
+			);
+		} else {
+			console.log('No devices found.');
+		}
 	});
 
 program
