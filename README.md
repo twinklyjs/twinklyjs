@@ -72,6 +72,21 @@ const devices = await discovery.discover();
 console.log(devices);
 ```
 
+## Use the Source Code directly
+
+To use the source code directly, you can install the dependencies and run the build:
+
+```sh
+npm install
+npm run build
+```
+
+You can then run the CLI directly:
+
+```sh
+node build/src/cli.js <command>
+```
+
 ## Examples
 
 There are a few examples of API usage available in `/examples`.
