@@ -85,6 +85,9 @@ There are a few examples of API usage available in `/examples`.
 
 This module currently only implements a subset of the available API.  We love contributions!  Feel free to open a PR, and reference the underlying part of the API you're trying to support.
 
+Want to join in on the discussion?
+visit our discord: https://discord.gg/AtA98tr2ab
+
 ## License
 
 [MIT](LICENSE.md)
