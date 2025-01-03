@@ -6,7 +6,7 @@
   "types": "build/src/index.d.ts",
   "type": "module",
   "bin": {
-    "twinkly": "./build/src/cli.js"
+    "twinkly": "build/src/cli.js"
   },
   "lint-staged": {
     "*.ts": "npm run fix"

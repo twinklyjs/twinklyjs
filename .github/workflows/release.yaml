@@ -12,8 +12,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: 'https://registry.npmjs.org'
           scope: '@twinklyjs'
       - run: npm ci
-      - run: npm publish --access public
+      - run: npm publish --access public --provenance
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
