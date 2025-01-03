@@ -83,7 +83,7 @@ There are a few examples of API usage available in `/examples`.
 
 ## Contributing
 
-This module currently only implements a subset of the available API.  We love contributions!  Feel free to open a PR, and reference the underlying part of the API you're trying to support.
+This module currently only implements a subset of the available API.  We love contributions!  Feel free to open a PR, and reference the underlying part of the API you're trying to support.  See [CONTRIBUTING](CONTRIBUTING.md) to learn more.
 
 ## License
 
