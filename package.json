@@ -14,7 +14,7 @@
   "scripts": {
     "start": "node build/src/app.js",
     "pretest": "npm run build",
-    "test": "node build/test/test.js",
+    "test": "node --test build/test/test.*.js",
     "build": "tsc",
     "fix": "biome check --write .",
     "lint": "biome check .",
@@ -27,6 +27,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.2",
+    "execa": "^9.5.2",
     "husky": "^9.1.7",
     "lint-staged": "^15.3.0",
     "typescript": "^5.7.2"
