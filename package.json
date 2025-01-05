@@ -1,9 +1,8 @@
 {
   "name": "@twinklyjs/twinkly",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "A Twinkly API client",
-  "main": "build/src/index.js",
-  "types": "build/src/index.d.ts",
+  "types": "./build/src/index.d.ts",
   "type": "module",
   "bin": {
     "twinkly": "build/src/cli.js"
@@ -12,15 +11,17 @@
     "*.ts": "npm run fix"
   },
   "exports": {
+    "types": "./build/src/index.d.ts",
     "node": "./build/src/index.js",
-    "browser": "./build/web/twinklyjs.js"
+    "browser": "./build/src/web.index.js",
+    "default": "./build/src/web.index.js"
   },
   "scripts": {
     "prepare": "husky && npm run build",
     "pretest": "npm run build",
     "test": "node --test build/test/test.*.js",
     "build": "tsc && npm run build:web",
-    "build:web": "esbuild src/web.ts --bundle --target=esnext --format=esm --outfile=build/web/twinklyjs.js",
+    "build:web": "esbuild src/web.ts --bundle --target=esnext --format=esm --outfile=build/src/web.index.js",
     "fix": "biome check --write .",
     "lint": "biome check .",
     "dev": "tsc --watch"
