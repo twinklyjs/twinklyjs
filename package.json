@@ -11,15 +11,19 @@
   "lint-staged": {
     "*.ts": "npm run fix"
   },
+  "exports": {
+    "node": "./build/src/index.js",
+    "browser": "./build/web/twinklyjs.js"
+  },
   "scripts": {
-    "start": "node build/src/app.js",
+    "prepare": "husky && npm run build",
     "pretest": "npm run build",
     "test": "node --test build/test/test.*.js",
-    "build": "tsc",
+    "build": "tsc && npm run build:web",
+    "build:web": "esbuild src/web.ts --bundle --target=esnext --format=esm --outfile=build/web/twinklyjs.js",
     "fix": "biome check --write .",
     "lint": "biome check .",
-    "dev": "tsc --watch",
-    "prepare": "husky && npm run build"
+    "dev": "tsc --watch"
   },
   "keywords": [],
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
@@ -27,6 +31,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.2",
+    "esbuild": "^0.24.2",
     "execa": "^9.5.2",
     "husky": "^9.1.7",
     "lint-staged": "^15.3.0",

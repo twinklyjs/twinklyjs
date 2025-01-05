@@ -1,5 +1,5 @@
 export const basePath = '/xled/v1';
-export const paths = {
+export const basePaths = Object.freeze({
 	LOGIN: '/login',
 	VERIFY: '/verify',
 	LOGOUT: '/logout',
@@ -60,19 +60,28 @@ export const paths = {
 	GET_MUSIC_DRIVERS: '/music/drivers',
 	GET_MUSIC_DRIVERS_SETS: '/music/drivers/sets',
 	GET_CURRENT_MUSIC_DRIVERSET: '/music/drivers/sets/current',
-};
+});
+export const paths = {} as typeof basePaths;
 
 const TypedKeys = <T extends object>(obj: T): (keyof T)[] => {
 	return Object.keys(obj) as (keyof T)[];
 };
 
+let globalOptions: InitOptions | undefined;
+
+export interface InitOptions {
+	additionalHeaders?: Record<string, string>;
+}
+
 /**
  * Initialize the API with the IP address of the device.
  * @param ip The IP address of the device
  */
-export function init(ip: string) {
-	for (const key of TypedKeys(paths)) {
-		paths[key] = `http://${ip}${basePath}${paths[key]}`;
+export function init(ip: string, options?: InitOptions) {
+	globalOptions = options;
+	for (const key of TypedKeys(basePaths)) {
+		(paths as Record<string, string>)[key] =
+			`http://${ip}${basePath}${basePaths[key]}`;
 	}
 }
 
@@ -109,6 +118,7 @@ export async function login(): Promise<LoginResponse> {
 	const res = await fetch(paths.LOGIN, {
 		method: 'POST',
 		body: JSON.stringify({ challenge }),
+		headers: globalOptions?.additionalHeaders,
 	});
 	throwIfErr(res);
 	const data = await res.json();
@@ -1729,6 +1739,7 @@ async function request(url: string, options: RequestInit = {}) {
 	}
 
 	options.headers = options.headers ?? {};
+	Object.assign(options.headers, globalOptions?.additionalHeaders ?? {});
 	(options.headers as Record<string, string>)['X-Auth-Token'] =
 		tokenData.authentication_token;
 
