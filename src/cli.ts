@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
+import fs, { Mode } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { Command } from 'commander';
+import { Argument, Command } from 'commander';
 import envPaths from 'env-paths';
 import * as api from './api.js';
 import { discover } from './discovery.js';
@@ -121,7 +121,9 @@ program
 	.action(async (red, green, blue, options) => {
 		const ip = await requireIP(options.ip);
 		api.init(ip);
-		//Ignore: the response from method.
+
+		await api.setLEDOperationMode({ mode: api.LEDOperationMode.COLOR });
+
 		const result = await api.setLEDColor({
 			red: Number(red),
 			green: Number(green),
@@ -133,7 +135,12 @@ program
 program
 	.command('setopmode')
 	.description('Set the LED operation mode')
-	.argument('<mode>')
+
+	.addArgument(
+		new Argument('<mode>', 'The LED Operation Mode Twinkly is set to.').choices(
+			['off', 'color', 'demo', 'movie', 'rt', 'effect', 'playlist'],
+		),
+	)
 
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (mode, options) => {
@@ -168,6 +175,112 @@ program
 			default:
 				console.error('Invalid action. Use "getip" or "setip".');
 		}
+	});
+program
+	.command('setbrightness')
+	.description('Send http request for changing brightness.')
+	.argument('<Mode>', 'Set to either Enabled or Disabled.')
+	.argument('<Type>', 'Either absolute(A) or relative(R)')
+	.argument(
+		'<Value>',
+		'The brightness being set, if mode set to Absolute/A,0-100, if mode set to Relative, integer from -100 to 100.',
+	)
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (Mode, Type, Value, options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		const response = await api.setLEDBrightness({
+			mode: Mode as 'enabled' | 'disabled',
+			type: Type as 'A' | 'R',
+			value: Number(Value),
+		});
+		console.log(response);
+	});
+program
+	.command('getbrightness')
+	.description('Get the brightness of the device.')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		const details = await api.getLEDBrightness();
+		console.log(details);
+	});
+
+program
+	.command('getopmode')
+	.description('Get the current LED operation mode of the device.')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		const details = await api.getLEDOperationMode();
+		console.log(details);
+	});
+
+program
+	.command('getcolor')
+	.description('Get the color of the device.')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		const details = await api.getLEDColor();
+		console.log(details);
+	});
+
+program
+	.command('getdetails')
+	.description('Get the details of the device.')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		const details = await api.getDeviceDetails();
+		console.log(details);
+	});
+
+program
+	.command('gettimer')
+	.description('Get the timer set for the device.')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		const timer = await api.getTimer();
+
+		console.log(
+			`Time on: ${Math.floor(timer.time_on / 3600)}:${Math.floor((timer.time_on % 3600) / 60)} Time off: ${Math.floor(timer.time_off / 3600)}:${Math.floor((timer.time_off % 3600) / 60)} `,
+		);
+	});
+program
+	.command('settimer')
+	.description('Send http request for setting timer.')
+	.argument(
+		'<TimeOn>',
+		'The time at which the device should turn on in military time, hours and seconds.',
+	)
+	.argument(
+		'<TimeOff>',
+		'The time at which the device should turn off in military time, hours and seconds.',
+	)
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (TimeOn, TimeOff, options) => {
+		const ip = await requireIP(options.ip);
+		api.init(ip);
+		const Now = new Date();
+		const hours = Now.getHours();
+		const minutes = Now.getMinutes();
+		const seconds = Now.getSeconds();
+
+		const [timeOnHr, timeOnMin] = TimeOn.split(':');
+		const [timeOffHr, timeOffMin] = TimeOff.split(':');
+		const response = await api.setTimer({
+			time_now: hours * (60 * 60) + minutes * 60 + seconds,
+			time_on: timeOnHr * (60 * 60) + timeOnMin * 60,
+			time_off: timeOffHr * (60 * 60) + timeOffMin * 60,
+		});
+		console.log(response);
 	});
 
 program.parse(process.argv);
