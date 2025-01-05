@@ -72,6 +72,15 @@ const devices = await discovery.discover();
 console.log(devices);
 ```
 
+### Browser usage
+
+This module is usable from the browser, with the exception of the following APIs which require UDP:
+
+- Discovery
+- Realtime
+
+The HTTP server in twinkly devices do not provide CORS headers, so you will need to proxy requests through a backend.
+
 ## Examples
 
 There are a few examples of API usage available in `/examples`.
