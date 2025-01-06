@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import fs, { Mode } from 'node:fs';
+import fs from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Argument, Command } from 'commander';
@@ -179,20 +179,32 @@ program
 program
 	.command('setbrightness')
 	.description('Send http request for changing brightness.')
-	.argument('<Mode>', 'Set to either Enabled or Disabled.')
-	.argument('<Type>', 'Either absolute(A) or relative(R)')
-	.argument(
-		'<Value>',
-		'The brightness being set, if mode set to Absolute/A,0-100, if mode set to Relative, integer from -100 to 100.',
+	.addArgument(
+		new Argument('<mode>', 'Enabled or Disabled').choices([
+			'enabled',
+			'disabled',
+		]),
+	)
+	.addArgument(
+		new Argument('<type>', 'Either absolute(A) or relative(R)').choices([
+			'a',
+			'r',
+		]),
+	)
+	.addArgument(
+		new Argument(
+			'<value>',
+			'The brightness being set, if mode set to Absolute/A,0-100, if mode set to Relative, integer from -100 to 100.',
+		),
 	)
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
-	.action(async (Mode, Type, Value, options) => {
+	.action(async (mode, type, value, options) => {
 		const ip = await requireIP(options.ip);
 		api.init(ip);
 		const response = await api.setLEDBrightness({
-			mode: Mode as 'enabled' | 'disabled',
-			type: Type as 'A' | 'R',
-			value: Number(Value),
+			mode: mode as 'enabled' | 'disabled',
+			type: type as 'A' | 'R',
+			value: Number(value),
 		});
 		console.log(response);
 	});
