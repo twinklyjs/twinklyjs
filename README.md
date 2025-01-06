@@ -97,6 +97,9 @@ This module currently only implements a subset of the available API.  We love co
 Want to join in on the discussion?
 visit our discord: https://discord.gg/AtA98tr2ab
 
+Want to join in on the discussion?
+visit our discord: https://discord.gg/AtA98tr2ab
+
 ## License
 
 [MIT](LICENSE.md)
