@@ -34,14 +34,21 @@ Options:
   -h, --help                               display help for command
 
 Commands:
-  discover                                 Discover Twinkly devices on the network
-  getmovie [options]                       Get the current movie
-  getmovies [options]                      Get movies installed.
-  setmovie [options] <id>                  Set LED color in RGB
-  setcolor [options] <red> <green> <blue>  Set LED color in RGB
-  setopmode [options] <mode>               Set the LED operation mode
-  config <action> [value]                  Manage configuration settings
-  help [command]                           display help for command
+  discover [options]                             Discover Twinkly devices on the network.
+  getmovie [options]                             Get the current movie
+  getmovies [options]                            Get movies installed.
+  setmovie [options] <id>                        Set LED color in RGB
+  setcolor [options] <red> <green> <blue>        Set LED color in RGB
+  setopmode [options] <mode>                     Set the LED operation mode
+  config <action> [value]                        Manage configuration settings
+  setbrightness [options] <mode> <type> <value>  Send http request for changing brightness.
+  getbrightness [options]                        Get the brightness of the device.
+  getopmode [options]                            Get the current LED operation mode of the device.
+  getcolor [options]                             Get the color of the device.
+  getdetails [options]                           Get the details of the device.
+  gettimer [options]                             Get the timer set for the device.
+  settimer [options] <TimeOn> <TimeOff>          Send http request for setting timer.
+  help [command]                                 display help for command
 ```
 
 ## API Usage
@@ -51,13 +58,13 @@ twinklyjs is also available as a library. Most operations are available on the `
 ```js
 import {api} from '@twinklyjs/twinkly';
 
-api.init('10.0.0.187');
-const details = await api.getDeviceDetails();
+const client = new api.TwinklyClient({ip: '10.0.0.187'});
+const details = await client.getDeviceDetails();
 console.log(details);
 
-await api.setLEDOperationMode({mode: 'color'});
-await api.setLEDColor({r: 0, g: 255, b: 0});
-const data = await api.getLEDOperationMode();
+await client.setLEDOperationMode({mode: 'color'});
+await client.setLEDColor({r: 0, g: 255, b: 0});
+const data = await client.getLEDOperationMode();
 console.log(data);
 ```
 
@@ -95,10 +102,7 @@ There are a few examples of API usage available in `/examples`.
 This module currently only implements a subset of the available API.  We love contributions!  Feel free to open a PR, and reference the underlying part of the API you're trying to support.  See [CONTRIBUTING](CONTRIBUTING.md) to learn more.
 
 Want to join in on the discussion?
-visit our discord: https://discord.gg/AtA98tr2ab
-
-Want to join in on the discussion?
-visit our discord: https://discord.gg/AtA98tr2ab
+visit our discord: <https://discord.gg/AtA98tr2ab>
 
 ## License
 

@@ -1,5 +1,5 @@
 export const basePath = '/xled/v1';
-export const basePaths = Object.freeze({
+export const paths = Object.freeze({
 	LOGIN: '/login',
 	VERIFY: '/verify',
 	LOGOUT: '/logout',
@@ -61,33 +61,10 @@ export const basePaths = Object.freeze({
 	GET_MUSIC_DRIVERS_SETS: '/music/drivers/sets',
 	GET_CURRENT_MUSIC_DRIVERSET: '/music/drivers/sets/current',
 });
-export const paths = {} as typeof basePaths;
-
-const TypedKeys = <T extends object>(obj: T): (keyof T)[] => {
-	return Object.keys(obj) as (keyof T)[];
-};
-
-let globalOptions: InitOptions | undefined;
 
 export interface InitOptions {
+	ip: string;
 	additionalHeaders?: Record<string, string>;
-}
-
-/**
- * Initialize the API with the IP address of the device.
- * @param ip The IP address of the device
- */
-export function init(ip: string, options?: InitOptions) {
-	globalOptions = options;
-	for (const key of TypedKeys(basePaths)) {
-		(paths as Record<string, string>)[key] =
-			`http://${ip}${basePath}${basePaths[key]}`;
-	}
-}
-
-let tokenData: LoginResponse;
-export function getToken() {
-	return tokenData.authentication_token;
 }
 
 export interface CodeResponse {
@@ -106,51 +83,11 @@ export interface LoginResponse extends CodeResponse {
 	'challenge-response': string;
 }
 
-/**
- * Obtain an auth token from the API.  As far as I can tell this is mostly theatre since there is no
- * private key or token from the app required?
- * @returns The token data
- */
-export async function login(): Promise<LoginResponse> {
-	const challengeBits = new Uint8Array(32);
-	crypto.getRandomValues(challengeBits);
-	const challenge = btoa(String.fromCharCode(...challengeBits));
-	const res = await fetch(paths.LOGIN, {
-		method: 'POST',
-		body: JSON.stringify({ challenge }),
-		headers: globalOptions?.additionalHeaders,
-	});
-	throwIfErr(res);
-	const data = await res.json();
-	return data;
-}
-
 export interface VerifyRequest {
 	/**
 	 * (optional) value returned by login request.
 	 */
 	'challenge-response': string;
-}
-
-/**
- * Verify the token retrieved by Login. Successful call invalidates previous token, if it existed.
- * Since firmware version 1.99.18.
- */
-export async function verify(options?: VerifyRequest): Promise<CodeResponse> {
-	return await request(paths.VERIFY, {
-		method: 'POST',
-		body: options ? JSON.stringify(options) : undefined,
-	});
-}
-
-/**
- * Probably invalidate access token. Doesn’t work.
- * Since firmware version 1.99.18.
- */
-export async function logout(): Promise<CodeResponse> {
-	return await request(paths.LOGOUT, {
-		method: 'POST',
-	});
 }
 
 export interface DeviceDetailsResponse extends CodeResponse {
@@ -236,85 +173,6 @@ export interface DeviceDetailsResponse extends CodeResponse {
 	copyright: string;
 }
 
-/**
- * Gets information detailed information about the device.
- * Since firmware version 1.99.18.
- * @returns
- */
-export async function getDeviceDetails(): Promise<DeviceDetailsResponse> {
-	return await request(paths.GET_DEVICE_DETAILS);
-}
-
-export interface GetDeviceNameResponse extends CodeResponse {
-	/**
-	 * (string) Device name.
-	 */
-	name: string;
-}
-
-/**
- * Gets device name
- * Since firmware version 1.99.18.
- */
-export async function getDeviceName(): Promise<GetDeviceNameResponse> {
-	return await request(paths.GET_DEVICE_NAME);
-}
-
-export interface SetDeviceNameRequest {
-	/**
-	 * (string) Desired device name. At most 32 characters.
-	 */
-	name: string;
-}
-
-/**
- * Sets device name
- */
-export async function setDeviceName(
-	options: SetDeviceNameRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_DEVICE_NAME, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
-/**
- * Responds with requested message.
- * Since firmware version 1.99.18.
- */
-export async function echo<T extends object>(body: T): Promise<T> {
-	return await request(paths.ECHO, {
-		method: 'POST',
-		body: JSON.stringify(body),
-	});
-}
-
-export interface GetTimerResponse extends CodeResponse {
-	/**
-	 * (integer) current time in seconds after midnight
-	 */
-	time_now: number;
-
-	/**
-	 * (number) time when to turn lights on in seconds after midnight. -1 if not set
-	 */
-	time_on: number;
-
-	/**
-	 * (number) time when to turn lights off in seconds after midnight. -1 if not set
-	 */
-	time_off: number;
-}
-
-/**
- * Gets time when lights should be turned on and time to turn them off.
- * Since firmware version 1.99.18.
- */
-export async function getTimer(): Promise<GetTimerResponse> {
-	return await request(paths.GET_TIMER);
-}
-
 export interface SetTimerRequest {
 	/**
 	 * (integer) current time in seconds after midnight
@@ -332,13 +190,21 @@ export interface SetTimerRequest {
 	time_off: number;
 }
 
-export async function setTimer(
-	options: SetTimerRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_TIMER, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
+export interface GetTimerResponse extends CodeResponse {
+	/**
+	 * (integer) current time in seconds after midnight
+	 */
+	time_now: number;
+
+	/**
+	 * (number) time when to turn lights on in seconds after midnight. -1 if not set
+	 */
+	time_on: number;
+
+	/**
+	 * (number) time when to turn lights off in seconds after midnight. -1 if not set
+	 */
+	time_off: number;
 }
 
 export interface Layout {
@@ -375,13 +241,6 @@ export interface GetLayoutResponse extends Layout {
 	uuid: string;
 }
 
-/**
- * Since firmware version 1.99.18.
- */
-export async function getLayout(): Promise<GetLayoutResponse> {
-	return await request(paths.GET_LAYOUT);
-}
-
 export type UploadLayoutRequest = Layout;
 
 export interface UploadLayoutResponse extends CodeResponse {
@@ -389,24 +248,6 @@ export interface UploadLayoutResponse extends CodeResponse {
 	 * (integer)
 	 */
 	parsed_coordinates: number;
-}
-
-/**
- * Since firmware version 1.99.18.
- */
-export async function uploadLayout(
-	options: UploadLayoutRequest,
-): Promise<UploadLayoutResponse> {
-	return await request(paths.UPLOAD_LAYOUT, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
-export async function deleteLayout(): Promise<CodeResponse> {
-	return await request(paths.DELETE_LAYOUT, {
-		method: 'DELETE',
-	});
 }
 
 export interface GetLEDOperationModeResponse extends CodeResponse {
@@ -419,13 +260,6 @@ export interface GetLEDOperationModeResponse extends CodeResponse {
 	 * (integer), by default 0. Since firmware version 2.4.21.
 	 */
 	shop_mode: number;
-}
-
-/**
- * Gets current LED operation mode.
- */
-export async function getLEDOperationMode(): Promise<GetLEDOperationModeResponse> {
-	return await request(paths.GET_LED_OPERATION_MODE);
 }
 
 export enum LEDOperationMode {
@@ -471,19 +305,6 @@ export interface SetLEDOperationModeRequest {
 	effect_id?: number;
 }
 
-/**
- * Changes LED operation mode.
- * Since firmware version 1.99.18.
- */
-export async function setLEDOperationMode(
-	options: SetLEDOperationModeRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_LED_OPERATION_MODE, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
 export interface GetLEDColorResponse extends CodeResponse {
 	/**
 	 * (integer), hue component of HSV, in range 0..359
@@ -509,14 +330,6 @@ export interface GetLEDColorResponse extends CodeResponse {
 	 * (integer), blue component of RGB, in range 0..255
 	 */
 	blue: number;
-}
-
-/**
- * Gets the color shown when in color mode.
- * Since firmware version 2.7.1
- */
-export async function getLEDColor(): Promise<GetLEDColorResponse> {
-	return await request(paths.GET_LED_COLOR);
 }
 
 export interface HSVColor {
@@ -555,16 +368,15 @@ export interface RGBColor {
 
 export type SetLEDColorRequest = HSVColor | RGBColor;
 
-/**
- * Sets the color shown when in color mode.
- */
-export async function setLEDColor(
-	options: SetLEDColorRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_LED_COLOR, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
+export interface GetCurrentLEDEffectResponse extends CodeResponse {
+	/**
+	 * (string), UUID. Since firmware version 2.5.6.
+	 */
+	unique_id: string;
+	/**
+	 * (integer), e.g. 0
+	 */
+	effect_id: number;
 }
 
 export interface GetLEDEffectsResponse extends CodeResponse {
@@ -579,28 +391,18 @@ export interface GetLEDEffectsResponse extends CodeResponse {
 	unique_ids: string[];
 }
 
-/**
- * Retrieve the identities of all available predefined effects.
- *
- * Since firmware version 1.99.18.
- */
-export async function getLEDEffects(): Promise<GetLEDEffectsResponse> {
-	return await request(paths.GET_LED_EFFECTS);
+export interface GetDeviceNameResponse extends CodeResponse {
+	/**
+	 * (string) Device name.
+	 */
+	name: string;
 }
 
-export interface GetCurrentLEDEffectResponse extends CodeResponse {
+export interface SetDeviceNameRequest {
 	/**
-	 * (string), UUID. Since firmware version 2.5.6.
+	 * (string) Desired device name. At most 32 characters.
 	 */
-	unique_id: string;
-	/**
-	 * (integer), e.g. 0
-	 */
-	effect_id: number;
-}
-
-export async function getCurrentLEDEffect(): Promise<GetCurrentLEDEffectResponse> {
-	return await request(paths.GET_CURRENT_LED_EFFECT);
+	name: string;
 }
 
 export interface SetCurrentLEDEffectRequest {
@@ -608,19 +410,6 @@ export interface SetCurrentLEDEffectRequest {
 	 * (int), id of effect, e.g. 0.
 	 */
 	effect_id: number;
-}
-
-/**
- * Sets which effect to show when in effect mode.
- * Since firmware version 1.99.18.
- */
-export async function setCurrentLEDEffect(
-	options: SetCurrentLEDEffectRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_CURRENT_LED_EFFECT, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
 }
 
 export interface LEDConfigString {
@@ -638,27 +427,8 @@ export interface GetLEDConfigResponse extends CodeResponse {
 	strings: LEDConfigString[];
 }
 
-/**
- * Since firmware version 1.99.18.
- */
-export async function getLEDConfig(): Promise<GetLEDConfigResponse> {
-	return await request(paths.GET_LED_CONFIG);
-}
-
 export interface SetLEDConfigRequest {
 	strings: LEDConfigString[];
-}
-
-/**
- * Since firmware version 1.99.18.
- */
-export async function setLEDConfig(
-	options: SetLEDConfigRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_LED_CONFIG, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
 }
 
 export interface UploadFullMovieResponse extends CodeResponse {
@@ -666,19 +436,6 @@ export interface UploadFullMovieResponse extends CodeResponse {
 	 * (integer) number of received frames
 	 */
 	frames_number: number;
-}
-
-/**
- * Effect is sent in body of the request. If mode is movie it starts playing this effect.
- * Since firmware version 1.99.18.
- */
-export async function uploadFullMovie(
-	content: ArrayBuffer,
-): Promise<UploadFullMovieResponse> {
-	return await request(paths.UPLOAD_FULL_MOVIE, {
-		method: 'POST',
-		body: content,
-	});
 }
 
 export interface GetLEDMovieConfigResponse extends CodeResponse {
@@ -723,13 +480,6 @@ export interface GetLEDMovieConfigResponse extends CodeResponse {
 	};
 }
 
-/**
- * Since firmware version 1.99.18.
- */
-export async function getLEDMovieConfig(): Promise<GetLEDMovieConfigResponse> {
-	return await request(paths.GET_LED_MOVIE_CONFIG);
-}
-
 export interface SetLEDMovieConfigRequest {
 	/**
 	 * (integer) the delay in milliseconds between two consecutive frames. For n fps, this is 1000 / n.
@@ -742,18 +492,6 @@ export interface SetLEDMovieConfigRequest {
 	frames_number: number;
 }
 
-/**
- * Since firmware version 1.99.18.
- */
-export async function setLEDMovieConfig(
-	options: SetLEDMovieConfigRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_LED_MOVIE_CONFIG, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
 export interface GetLEDBrightnessResponse extends CodeResponse {
 	/**
 	 * (string) one of “enabled” or “disabled”.
@@ -764,16 +502,6 @@ export interface GetLEDBrightnessResponse extends CodeResponse {
 	 * (integer) brightness level in range of 0..100
 	 */
 	value: number;
-}
-
-/**
- * Gets the current brightness level.
- * For devices with firmware family “D” since version 2.3.5.
- * For devices with firmware family “F” since 2.4.2.
- * For devices with firmware family “G” since version 2.4.21.
- */
-export async function getLEDBrightness(): Promise<GetLEDBrightnessResponse> {
-	return await request(paths.GET_LED_BRIGHTNESS);
 }
 
 export interface SetLEDBrightnessRequest {
@@ -791,21 +519,6 @@ export interface SetLEDBrightnessRequest {
 	value: number;
 }
 
-/**
- * Sets the brightness level.
- * For devices with firmware family “D” since version 2.3.5.
- * For devices with firmware family “F” since 2.4.2.
- * For devices with firmware family “G” since version 2.4.21.
- */
-export async function setLEDBrightness(
-	options: SetLEDBrightnessRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_LED_BRIGHTNESS, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
 export interface GetLEDSaturationResponse extends CodeResponse {
 	/**
 	 * (string) one of “enabled” or “disabled”.
@@ -815,18 +528,6 @@ export interface GetLEDSaturationResponse extends CodeResponse {
 	 * (integer) saturation level in range of 0..100
 	 */
 	value: number;
-}
-
-/**
- * Gets the current saturation level.
- * For devices with firmware family “D” since version 2.3.5.
- * For devices with firmware family “F” since 2.4.2.
- * For devices with firmware family “G” since version 2.4.21.
- *
- * Mode string displays if desaturation is applied. The led shines with full color regardless of what value is set if the mode is disabled. Saturation level value represents percent so 0 is completely black-and-white and 100 is full color.
- */
-export async function getLEDSaturation(): Promise<GetLEDSaturationResponse> {
-	return await request(paths.GET_LED_SATURATION);
 }
 
 export interface SetLEDSaturationRequest {
@@ -844,23 +545,6 @@ export interface SetLEDSaturationRequest {
 	value: number;
 }
 
-/**
- * Sets the saturation level.
- * For devices with firmware family “D” since version 2.3.5.
- * For devices with firmware family “F” since 2.4.2.
- * For devices with firmware family “G” since version 2.4.21.
- *
- * When mode is “disabled” no desaturation is applied and the led works at full color. It is not necessary to submit all the parameters, basically it would work if only value or mode is supplied. type parameter can be omitted (“A” is the default). The saturation level value is in percent so 0 is completely black-and-white and maximum meaningful value is 100. Greater values are possible but don’t seem to have any effect.
- */
-export async function setLEDSaturation(
-	options: SetLEDSaturationRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_LED_SATURATION, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
 export interface SetLEDDriverParametersRequest {
 	t0h: number;
 	t0l: number;
@@ -870,65 +554,8 @@ export interface SetLEDDriverParametersRequest {
 	tendl: number;
 }
 
-/**
- * Since firmware version 1.99.18.
- */
-export async function setLEDDriverParameters(
-	options: SetLEDDriverParametersRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_LED_DRIVER_PARAMETERS, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
-/**
- * Maybe reboot?
- */
-export async function resetLED(): Promise<CodeResponse> {
-	return await request(paths.RESET_LED);
-}
-
-/**
- * Maybe reboot?
- */
-export async function resetLED2(): Promise<CodeResponse> {
-	return await request(paths.RESET_LED2);
-}
-
-/**
- * Used by application during lights mapping.
- * Frame without any header is sent in the request body.
- */
-export async function sendRealtimeFrame(
-	content: ArrayBuffer,
-): Promise<CodeResponse> {
-	return await request(paths.SEND_REALTIME_FRAME, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/octet-stream',
-		},
-		body: content,
-	});
-}
-
 export interface getFWVersion extends CodeResponse {
 	version: string;
-}
-
-/**
- * Note: no authentication needed.
- * Since firmware version 1.99.18.
- */
-export async function getFWVersion(): Promise<getFWVersion> {
-	return await request(paths.GET_FW_VERSION);
-}
-
-/**
- * Since firmware version 1.99.18.
- */
-export async function getStatus(): Promise<CodeResponse> {
-	return await request(paths.GET_STATUS);
 }
 
 export interface UpdateFirmwareRequest {
@@ -944,19 +571,6 @@ export interface UpdateFirmwareRequest {
 	};
 }
 
-/**
- * Initiates firmware update.
- * Since firmware version 1.99.18.
- */
-export async function updateFirmware(
-	options: UpdateFirmwareRequest,
-): Promise<CodeResponse> {
-	return await request(paths.UPDATE_FIRMWARE, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
 export interface UploadFirstStageFirmwareResponse {
 	/**
 	 * SHA1 digest of uploaded firmware.
@@ -964,44 +578,11 @@ export interface UploadFirstStageFirmwareResponse {
 	sha1sum: string;
 }
 
-/**
- * First stage of firmware is uploaded in body of the request.
- * Since firmware version 1.99.18.
- */
-export async function uploadFirstStageFirmware(
-	content: ArrayBuffer,
-): Promise<UploadFirstStageFirmwareResponse> {
-	return await request(paths.UPLOAD_FIRST_STAGE_FIRMWARE, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/octet-stream',
-		},
-		body: content,
-	});
-}
-
 export interface UploadSecondStageFirmwareResponse {
 	/**
 	 * SHA1 digest of uploaded firmware.
 	 */
 	sha1sum: string;
-}
-
-/**
- * Second stage of firmware is uploaded in body of the request.
- * Since firmware version 1.99.18.
- * Used only for generation I devices.
- */
-export async function uploadSecondStageFirmware(
-	content: ArrayBuffer,
-): Promise<UploadSecondStageFirmwareResponse> {
-	return await request(paths.UPLOAD_SECOND_STAGE_FIRMWARE, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/octet-stream',
-		},
-		body: content,
-	});
 }
 
 export interface Movie {
@@ -1047,25 +628,6 @@ export interface GetMoviesResponse extends CodeResponse {
 	max_capacity: number;
 }
 
-/**
- * Retrieve the identities and parameters of all uploaded movies.
- * Available since firmware version 2.5.6.
- */
-export async function getMovies(): Promise<GetMoviesResponse> {
-	return await request(paths.GET_MOVIES);
-}
-
-/**
- * Remove all uploaded movies.
- * Any existing playlist will be removed as well. This call only works if the device is not in movie or playlist mode.
- * Available since firmware version 2.5.6.
- */
-export async function deleteMovies(): Promise<CodeResponse> {
-	return await request(paths.DELETE_MOVIES, {
-		method: 'DELETE',
-	});
-}
-
 export interface CreateMovieEntryRequest {
 	/**
 	 * (string)
@@ -1093,32 +655,6 @@ export interface CreateMovieEntryRequest {
 	fps: number;
 }
 
-/**
- * Available since firmware version 2.5.6.
- */
-export async function createMovieEntry(
-	options: CreateMovieEntryRequest,
-): Promise<CodeResponse> {
-	return await request(paths.CREATE_MOVIE_ENTRY, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
-/**
- * Available since firmware version 2.5.6.
- * Effect is received in body of the request. This call must be preceeded by a call to movies/new.
- */
-export async function uploadMovie(content: ArrayBuffer): Promise<CodeResponse> {
-	return await request(paths.UPLOAD_MOVIE, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/octet-stream',
-		},
-		body: content,
-	});
-}
-
 export interface GetCurrentMovieResponse extends CodeResponse {
 	/**
 	 * (integer), numeric id of movie, in range 0 .. 15
@@ -1134,40 +670,6 @@ export interface GetCurrentMovieResponse extends CodeResponse {
 	 * (string), name of movie.
 	 */
 	name: string;
-}
-
-/**
- * Gets the id of the movie shown when in movie mode.
- */
-export async function getCurrentMovie(): Promise<GetCurrentMovieResponse> {
-	return await request(paths.GET_CURRENT_MOVIE);
-}
-
-export interface SetCurrentMovieRequest {
-	/**
-	 * (int), id of movie, in range 0 .. 15.
-	 */
-	id: number;
-}
-
-/**
- * Sets which movie to show when in movie mode.
- * Since firmware version 2.5.6.
- */
-export async function setCurrentMovie(
-	options: SetCurrentMovieRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_CURRENT_MOVIE, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
-/**
- * Since firmware version 1.99.18.
- */
-export async function InitiateWiFiNetworkScan(): Promise<CodeResponse> {
-	return await request(paths.INITIATE_WIFI_NETWORK_SCAN);
 }
 
 /**
@@ -1187,13 +689,6 @@ export interface GetWiFiScanResultsResponse extends CodeResponse {
 		 */
 		enc: 0 | 1 | 2 | 3 | 4 | 5;
 	}[];
-}
-
-/**
- * Since firmware version 1.99.18.
- */
-export async function getWiFiScanResults(): Promise<GetWiFiScanResultsResponse> {
-	return await request(paths.GET_NETWORK_SCAN_RESULTS);
 }
 
 export interface GetNetworkStatusResponse extends CodeResponse {
@@ -1261,12 +756,11 @@ export interface GetNetworkStatusResponse extends CodeResponse {
 	};
 }
 
-/**
- * Gets network mode operation.
- * Since firmware version 1.99.18.
- */
-export async function getNetworkStatus(): Promise<GetNetworkStatusResponse> {
-	return await request(paths.GET_NETWORK_STATUS);
+export interface SetCurrentMovieRequest {
+	/**
+	 * (int), id of movie, in range 0 .. 15.
+	 */
+	id: number;
 }
 
 export interface SetNetworkStatusRequest {
@@ -1330,15 +824,6 @@ export interface SetNetworkStatusRequest {
 	};
 }
 
-export async function setNetworkStatus(
-	options: SetNetworkStatusRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_NETWORK_STATUS, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
 export interface GetMQTTConfigResponse extends CodeResponse {
 	/**
 	 * (string), hostname of broker. By default mqtt.twinkly.com.
@@ -1373,15 +858,6 @@ export interface GetMQTTConfigResponse extends CodeResponse {
 }
 
 /**
- * For devices with firmware family “D” since version 2.0.22.
- * For devices with firmware family “F” since version 2.4.2.
- * For devices with firmware family “G” since version 2.4.21.
- */
-export async function getMQTTConfig(): Promise<GetMQTTConfigResponse> {
-	return await request(paths.GET_MQTT_CONFIG);
-}
-
-/**
  * For firmware family “D” since firmware version 2.0.22 and firmware family “G” since firmware version 2.4.21 and firmware family “F” since version 2.4.2:
  */
 export interface SetMQTTConfigRequest {
@@ -1403,18 +879,6 @@ export interface SetMQTTConfigRequest {
 	user?: string;
 }
 
-/**
- * Since firmware version: 2.0.22
- */
-export async function setMQTTConfig(
-	options: SetMQTTConfigRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_MQTT_CONFIG, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
 export interface PlaylistEntry {
 	/**
 	 * (integer), in seconds, e.g. 10
@@ -1430,36 +894,8 @@ export interface GetPlaylistResponse extends CodeResponse {
 	entries: PlaylistEntry[];
 }
 
-/**
- * Available since firmware version 2.5.6.
- */
-export async function getPlaylist(): Promise<GetPlaylistResponse> {
-	return await request(paths.GET_PLAYLIST);
-}
-
 export interface CreatePlaylistRequest {
 	entries: PlaylistEntry[];
-}
-
-/**
- * Available since firmware version 2.5.6.
- */
-export async function createPlaylist(
-	options: CreatePlaylistRequest,
-): Promise<CodeResponse> {
-	return await request(paths.CREATE_PLAYLIST, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
-}
-
-/**
- * Available since firmware version 2.5.6.
- */
-export async function deletePlaylist(): Promise<CodeResponse> {
-	return await request(paths.DELETE_PLAYLIST, {
-		method: 'DELETE',
-	});
 }
 
 export interface GetCurrentPlaylistEntryResponse extends CodeResponse {
@@ -1477,33 +913,11 @@ export interface GetCurrentPlaylistEntryResponse extends CodeResponse {
 	name: string;
 }
 
-/**
- * Gets which movie is currently played in playlist mode.
- * Available since firmware version 2.5.6.
- */
-export async function getCurrentPlaylistEntry(): Promise<GetCurrentPlaylistEntryResponse> {
-	return await request(paths.GET_CURRENT_PLAYLIST_ENTRY);
-}
-
 export interface SetCurrentPlaylistEntryRequest {
 	/**
 	 * (int), id of movie to jump to, e.g. 0.
 	 */
 	id: number;
-}
-
-/**
- * Sets which movie to jump to when in playlist mode.
- * When entering playlist mode, it always starts from the first entry in the playlist, so this call is only useful when already in playlist mode.
- * Available since firmware version 2.5.6.
- */
-export async function setCurrentPlaylistEntry(
-	options: SetCurrentPlaylistEntryRequest,
-): Promise<CodeResponse> {
-	return await request(paths.SET_CURRENT_PLAYLIST_ENTRY, {
-		method: 'POST',
-		body: JSON.stringify(options),
-	});
 }
 
 export interface GetMicConfigResponse extends CodeResponse {
@@ -1537,25 +951,11 @@ export interface GetMicConfigResponse extends CodeResponse {
 	saturation_depth: number;
 }
 
-/**
- * Since firmware version 2.4.2 until 2.4.30.
- */
-export async function getMicConfig(): Promise<GetMicConfigResponse> {
-	return await request(paths.GET_MIC_CONFIG);
-}
-
 export interface GetMicSampleResponse extends CodeResponse {
 	/**
 	 * (integer), e.g. 0
 	 */
 	sampled_value: number;
-}
-
-/**
- * Since firmware version 2.4.2 until 2.4.30.
- */
-export async function getMicSample(): Promise<GetMicSampleResponse> {
-	return await request(paths.GET_MIC_SAMPLE);
 }
 
 export interface GetSummaryResponse extends CodeResponse {
@@ -1626,13 +1026,6 @@ export interface GetSummaryResponse extends CodeResponse {
 	};
 }
 
-/**
- * Since firmware version 2.5.6.
- */
-export async function getSummary(): Promise<GetSummaryResponse> {
-	return await request(paths.GET_SUMMARY);
-}
-
 export interface GetMusicDriversResponse extends CodeResponse {
 	/**
 	 * (integer), e.g. 26
@@ -1643,13 +1036,6 @@ export interface GetMusicDriversResponse extends CodeResponse {
 	 * (array), each entry is UUID string
 	 */
 	unique_ids: string[];
-}
-
-/**
- * Since firmware version 2.5.6.
- */
-export async function getMusicDrivers(): Promise<GetMusicDriversResponse> {
-	return await request(paths.GET_MUSIC_DRIVERS);
 }
 
 export interface MusicDriversSet {
@@ -1680,13 +1066,6 @@ export interface GetMusicDriversSetsResponse extends CodeResponse {
 	driversets: MusicDriversSet[];
 }
 
-/**
- * Since firmware version 2.5.6.
- */
-export async function getMusicDriversSets(): Promise<GetMusicDriversSetsResponse> {
-	return await request(paths.GET_MUSIC_DRIVERS_SETS);
-}
-
 export interface GetCurrentMusicDriversetResponse extends CodeResponse {
 	/**
 	 * (integer), e.g. 0
@@ -1695,21 +1074,659 @@ export interface GetCurrentMusicDriversetResponse extends CodeResponse {
 }
 
 /**
- * Since firmware version 2.5.6.
+ * The Twinkly API client.
  */
-export async function getCurrentMusicDriverset(): Promise<GetCurrentMusicDriversetResponse> {
-	return await request(paths.GET_CURRENT_MUSIC_DRIVERSET);
-}
+export class TwinklyClient {
+	private tokenData: LoginResponse | undefined;
+	private globalOptions: InitOptions;
 
-/**
- * UTILITY FUNCTIONS
- */
+	/**
+	 * Initialize the API with the IP address of the device.
+	 */
+	constructor(options: InitOptions) {
+		this.globalOptions = options;
+	}
+
+	/**
+	 * Fetch the token (if available)
+	 */
+	getToken() {
+		return this.tokenData?.authentication_token;
+	}
+
+	/**
+	 * Gets device name
+	 * Since firmware version 1.99.18.
+	 */
+	async getDeviceName(): Promise<GetDeviceNameResponse> {
+		return await this.request(paths.GET_DEVICE_NAME);
+	}
+
+	/**
+	 * Obtain an auth token from the API.  As far as I can tell this is mostly theatre since there is no
+	 * private key or token from the app required?
+	 * @returns The token data
+	 */
+	async login(): Promise<LoginResponse> {
+		const challengeBits = new Uint8Array(32);
+		crypto.getRandomValues(challengeBits);
+		const challenge = btoa(String.fromCharCode(...challengeBits));
+		const res = await fetch(this.buildUrl(paths.LOGIN), {
+			method: 'POST',
+			body: JSON.stringify({ challenge }),
+			headers: this.globalOptions?.additionalHeaders,
+		});
+		throwIfErr(res);
+		const data = await res.json();
+		return data;
+	}
+
+	/**
+	 * Verify the token retrieved by Login. Successful call invalidates previous token, if it existed.
+	 * Since firmware version 1.99.18.
+	 */
+	async verify(options?: VerifyRequest): Promise<CodeResponse> {
+		return await this.request(paths.VERIFY, {
+			method: 'POST',
+			body: options ? JSON.stringify(options) : undefined,
+		});
+	}
+
+	/**
+	 * Probably invalidate access token. Doesn’t work.
+	 * Since firmware version 1.99.18.
+	 */
+	async logout(): Promise<CodeResponse> {
+		return await this.request(paths.LOGOUT, {
+			method: 'POST',
+		});
+	}
+
+	/**
+	 * Gets information detailed information about the device.
+	 * Since firmware version 1.99.18.
+	 * @returns
+	 */
+	async getDeviceDetails(): Promise<DeviceDetailsResponse> {
+		return await this.request(paths.GET_DEVICE_DETAILS);
+	}
+
+	/**
+	 * Sets device name
+	 */
+	async setDeviceName(options: SetDeviceNameRequest): Promise<CodeResponse> {
+		return await this.request(paths.SET_DEVICE_NAME, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Responds with requested message.
+	 * Since firmware version 1.99.18.
+	 */
+	async echo<T extends object>(body: T): Promise<T> {
+		return await this.request(paths.ECHO, {
+			method: 'POST',
+			body: JSON.stringify(body),
+		});
+	}
+
+	/**
+	 * Gets time when lights should be turned on and time to turn them off.
+	 * Since firmware version 1.99.18.
+	 */
+	async getTimer(): Promise<GetTimerResponse> {
+		return await this.request(paths.GET_TIMER);
+	}
+
+	async setTimer(options: SetTimerRequest): Promise<CodeResponse> {
+		return await this.request(paths.SET_TIMER, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Since firmware version 1.99.18.
+	 */
+	async getLayout(): Promise<GetLayoutResponse> {
+		return await this.request(paths.GET_LAYOUT);
+	}
+
+	/**
+	 * Since firmware version 1.99.18.
+	 */
+	async uploadLayout(
+		options: UploadLayoutRequest,
+	): Promise<UploadLayoutResponse> {
+		return await this.request(paths.UPLOAD_LAYOUT, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	async deleteLayout(): Promise<CodeResponse> {
+		return await this.request(paths.DELETE_LAYOUT, {
+			method: 'DELETE',
+		});
+	}
+
+	/**
+	 * Gets current LED operation mode.
+	 */
+	async getLEDOperationMode(): Promise<GetLEDOperationModeResponse> {
+		return await this.request(paths.GET_LED_OPERATION_MODE);
+	}
+
+	/**
+	 * Changes LED operation mode.
+	 * Since firmware version 1.99.18.
+	 */
+	async setLEDOperationMode(
+		options: SetLEDOperationModeRequest,
+	): Promise<CodeResponse> {
+		return await this.request(paths.SET_LED_OPERATION_MODE, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Gets the color shown when in color mode.
+	 * Since firmware version 2.7.1
+	 */
+	async getLEDColor(): Promise<GetLEDColorResponse> {
+		return await this.request(paths.GET_LED_COLOR);
+	}
+
+	/**
+	 * Sets the color shown when in color mode.
+	 */
+	async setLEDColor(options: SetLEDColorRequest): Promise<CodeResponse> {
+		return await this.request(paths.SET_LED_COLOR, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Retrieve the identities of all available predefined effects.
+	 *
+	 * Since firmware version 1.99.18.
+	 */
+	async getLEDEffects(): Promise<GetLEDEffectsResponse> {
+		return await this.request(paths.GET_LED_EFFECTS);
+	}
+
+	async getCurrentLEDEffect(): Promise<GetCurrentLEDEffectResponse> {
+		return await this.request(paths.GET_CURRENT_LED_EFFECT);
+	}
+
+	/**
+	 * Sets which effect to show when in effect mode.
+	 * Since firmware version 1.99.18.
+	 */
+	async setCurrentLEDEffect(
+		options: SetCurrentLEDEffectRequest,
+	): Promise<CodeResponse> {
+		return await this.request(paths.SET_CURRENT_LED_EFFECT, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Since firmware version 1.99.18.
+	 */
+	async getLEDConfig(): Promise<GetLEDConfigResponse> {
+		return await this.request(paths.GET_LED_CONFIG);
+	}
+
+	/**
+	 * Since firmware version 1.99.18.
+	 */
+	async setLEDConfig(options: SetLEDConfigRequest): Promise<CodeResponse> {
+		return await this.request(paths.SET_LED_CONFIG, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Effect is sent in body of the request. If mode is movie it starts playing this effect.
+	 * Since firmware version 1.99.18.
+	 */
+	async uploadFullMovie(
+		content: ArrayBuffer,
+	): Promise<UploadFullMovieResponse> {
+		return await this.request(paths.UPLOAD_FULL_MOVIE, {
+			method: 'POST',
+			body: content,
+		});
+	}
+
+	/**
+	 * Since firmware version 1.99.18.
+	 */
+	async getLEDMovieConfig(): Promise<GetLEDMovieConfigResponse> {
+		return await this.request(paths.GET_LED_MOVIE_CONFIG);
+	}
+
+	/**
+	 * Since firmware version 1.99.18.
+	 */
+	async setLEDMovieConfig(
+		options: SetLEDMovieConfigRequest,
+	): Promise<CodeResponse> {
+		return await this.request(paths.SET_LED_MOVIE_CONFIG, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Gets the current brightness level.
+	 * For devices with firmware family “D” since version 2.3.5.
+	 * For devices with firmware family “F” since 2.4.2.
+	 * For devices with firmware family “G” since version 2.4.21.
+	 */
+	async getLEDBrightness(): Promise<GetLEDBrightnessResponse> {
+		return await this.request(paths.GET_LED_BRIGHTNESS);
+	}
+
+	/**
+	 * Sets the brightness level.
+	 * For devices with firmware family “D” since version 2.3.5.
+	 * For devices with firmware family “F” since 2.4.2.
+	 * For devices with firmware family “G” since version 2.4.21.
+	 */
+	async setLEDBrightness(
+		options: SetLEDBrightnessRequest,
+	): Promise<CodeResponse> {
+		return await this.request(paths.SET_LED_BRIGHTNESS, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Gets the current saturation level.
+	 * For devices with firmware family “D” since version 2.3.5.
+	 * For devices with firmware family “F” since 2.4.2.
+	 * For devices with firmware family “G” since version 2.4.21.
+	 *
+	 * Mode string displays if desaturation is applied. The led shines with full color regardless of what value is set if the mode is disabled. Saturation level value represents percent so 0 is completely black-and-white and 100 is full color.
+	 */
+	async getLEDSaturation(): Promise<GetLEDSaturationResponse> {
+		return await this.request(paths.GET_LED_SATURATION);
+	}
+
+	/**
+	 * Sets the saturation level.
+	 * For devices with firmware family “D” since version 2.3.5.
+	 * For devices with firmware family “F” since 2.4.2.
+	 * For devices with firmware family “G” since version 2.4.21.
+	 *
+	 * When mode is “disabled” no desaturation is applied and the led works at full color. It is not necessary to submit all the parameters, basically it would work if only value or mode is supplied. type parameter can be omitted (“A” is the default). The saturation level value is in percent so 0 is completely black-and-white and maximum meaningful value is 100. Greater values are possible but don’t seem to have any effect.
+	 */
+	async setLEDSaturation(
+		options: SetLEDSaturationRequest,
+	): Promise<CodeResponse> {
+		return await this.request(paths.SET_LED_SATURATION, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Since firmware version 1.99.18.
+	 */
+	async setLEDDriverParameters(
+		options: SetLEDDriverParametersRequest,
+	): Promise<CodeResponse> {
+		return await this.request(paths.SET_LED_DRIVER_PARAMETERS, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Maybe reboot?
+	 */
+	async resetLED(): Promise<CodeResponse> {
+		return await this.request(paths.RESET_LED);
+	}
+
+	/**
+	 * Maybe reboot?
+	 */
+	async resetLED2(): Promise<CodeResponse> {
+		return await this.request(paths.RESET_LED2);
+	}
+
+	/**
+	 * Used by application during lights mapping.
+	 * Frame without any header is sent in the request body.
+	 */
+	async sendRealtimeFrame(content: ArrayBuffer): Promise<CodeResponse> {
+		return await this.request(paths.SEND_REALTIME_FRAME, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/octet-stream',
+			},
+			body: content,
+		});
+	}
+
+	/**
+	 * Note: no authentication needed.
+	 * Since firmware version 1.99.18.
+	 */
+	async getFWVersion(): Promise<getFWVersion> {
+		return await this.request(paths.GET_FW_VERSION);
+	}
+
+	/**
+	 * Since firmware version 1.99.18.
+	 */
+	async getStatus(): Promise<CodeResponse> {
+		return await this.request(paths.GET_STATUS);
+	}
+
+	/**
+	 * Initiates firmware update.
+	 * Since firmware version 1.99.18.
+	 */
+	async updateFirmware(options: UpdateFirmwareRequest): Promise<CodeResponse> {
+		return await this.request(paths.UPDATE_FIRMWARE, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * First stage of firmware is uploaded in body of the request.
+	 * Since firmware version 1.99.18.
+	 */
+	async uploadFirstStageFirmware(
+		content: ArrayBuffer,
+	): Promise<UploadFirstStageFirmwareResponse> {
+		return await this.request(paths.UPLOAD_FIRST_STAGE_FIRMWARE, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/octet-stream',
+			},
+			body: content,
+		});
+	}
+
+	/**
+	 * Second stage of firmware is uploaded in body of the request.
+	 * Since firmware version 1.99.18.
+	 * Used only for generation I devices.
+	 */
+	async uploadSecondStageFirmware(
+		content: ArrayBuffer,
+	): Promise<UploadSecondStageFirmwareResponse> {
+		return await this.request(paths.UPLOAD_SECOND_STAGE_FIRMWARE, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/octet-stream',
+			},
+			body: content,
+		});
+	}
+
+	/**
+	 * Retrieve the identities and parameters of all uploaded movies.
+	 * Available since firmware version 2.5.6.
+	 */
+	async getMovies(): Promise<GetMoviesResponse> {
+		return await this.request(paths.GET_MOVIES);
+	}
+
+	/**
+	 * Remove all uploaded movies.
+	 * Any existing playlist will be removed as well. This call only works if the device is not in movie or playlist mode.
+	 * Available since firmware version 2.5.6.
+	 */
+	async deleteMovies(): Promise<CodeResponse> {
+		return await this.request(paths.DELETE_MOVIES, {
+			method: 'DELETE',
+		});
+	}
+
+	/**
+	 * Available since firmware version 2.5.6.
+	 */
+	async createMovieEntry(
+		options: CreateMovieEntryRequest,
+	): Promise<CodeResponse> {
+		return await this.request(paths.CREATE_MOVIE_ENTRY, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Available since firmware version 2.5.6.
+	 * Effect is received in body of the request. This call must be preceeded by a call to movies/new.
+	 */
+	async uploadMovie(content: ArrayBuffer): Promise<CodeResponse> {
+		return await this.request(paths.UPLOAD_MOVIE, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/octet-stream',
+			},
+			body: content,
+		});
+	}
+
+	/**
+	 * Gets the id of the movie shown when in movie mode.
+	 */
+	async getCurrentMovie(): Promise<GetCurrentMovieResponse> {
+		return await this.request(paths.GET_CURRENT_MOVIE);
+	}
+
+	/**
+	 * Sets which movie to show when in movie mode.
+	 * Since firmware version 2.5.6.
+	 */
+	async setCurrentMovie(
+		options: SetCurrentMovieRequest,
+	): Promise<CodeResponse> {
+		return await this.request(paths.SET_CURRENT_MOVIE, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Since firmware version 1.99.18.
+	 */
+	async InitiateWiFiNetworkScan(): Promise<CodeResponse> {
+		return await this.request(paths.INITIATE_WIFI_NETWORK_SCAN);
+	}
+
+	/**
+	 * Since firmware version 1.99.18.
+	 */
+	async getWiFiScanResults(): Promise<GetWiFiScanResultsResponse> {
+		return await this.request(paths.GET_NETWORK_SCAN_RESULTS);
+	}
+
+	/**
+	 * Gets network mode operation.
+	 * Since firmware version 1.99.18.
+	 */
+	async getNetworkStatus(): Promise<GetNetworkStatusResponse> {
+		return await this.request(paths.GET_NETWORK_STATUS);
+	}
+
+	async setNetworkStatus(
+		options: SetNetworkStatusRequest,
+	): Promise<CodeResponse> {
+		return await this.request(paths.SET_NETWORK_STATUS, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * For devices with firmware family “D” since version 2.0.22.
+	 * For devices with firmware family “F” since version 2.4.2.
+	 * For devices with firmware family “G” since version 2.4.21.
+	 */
+	async getMQTTConfig(): Promise<GetMQTTConfigResponse> {
+		return await this.request(paths.GET_MQTT_CONFIG);
+	}
+
+	/**
+	 * Since firmware version: 2.0.22
+	 */
+	async setMQTTConfig(options: SetMQTTConfigRequest): Promise<CodeResponse> {
+		return await this.request(paths.SET_MQTT_CONFIG, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Available since firmware version 2.5.6.
+	 */
+	async getPlaylist(): Promise<GetPlaylistResponse> {
+		return await this.request(paths.GET_PLAYLIST);
+	}
+
+	/**
+	 * Available since firmware version 2.5.6.
+	 */
+	async createPlaylist(options: CreatePlaylistRequest): Promise<CodeResponse> {
+		return await this.request(paths.CREATE_PLAYLIST, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Available since firmware version 2.5.6.
+	 */
+	async deletePlaylist(): Promise<CodeResponse> {
+		return await this.request(paths.DELETE_PLAYLIST, {
+			method: 'DELETE',
+		});
+	}
+
+	/**
+	 * Gets which movie is currently played in playlist mode.
+	 * Available since firmware version 2.5.6.
+	 */
+	async getCurrentPlaylistEntry(): Promise<GetCurrentPlaylistEntryResponse> {
+		return await this.request(paths.GET_CURRENT_PLAYLIST_ENTRY);
+	}
+
+	/**
+	 * Sets which movie to jump to when in playlist mode.
+	 * When entering playlist mode, it always starts from the first entry in the playlist, so this call is only useful when already in playlist mode.
+	 * Available since firmware version 2.5.6.
+	 */
+	async setCurrentPlaylistEntry(
+		options: SetCurrentPlaylistEntryRequest,
+	): Promise<CodeResponse> {
+		return await this.request(paths.SET_CURRENT_PLAYLIST_ENTRY, {
+			method: 'POST',
+			body: JSON.stringify(options),
+		});
+	}
+
+	/**
+	 * Since firmware version 2.4.2 until 2.4.30.
+	 */
+	async getMicConfig(): Promise<GetMicConfigResponse> {
+		return await this.request(paths.GET_MIC_CONFIG);
+	}
+
+	/**
+	 * Since firmware version 2.4.2 until 2.4.30.
+	 */
+	async getMicSample(): Promise<GetMicSampleResponse> {
+		return await this.request(paths.GET_MIC_SAMPLE);
+	}
+
+	/**
+	 * Since firmware version 2.5.6.
+	 */
+	async getSummary(): Promise<GetSummaryResponse> {
+		return await this.request(paths.GET_SUMMARY);
+	}
+
+	/**
+	 * Since firmware version 2.5.6.
+	 */
+	async getMusicDrivers(): Promise<GetMusicDriversResponse> {
+		return await this.request(paths.GET_MUSIC_DRIVERS);
+	}
+
+	/**
+	 * Since firmware version 2.5.6.
+	 */
+	async getMusicDriversSets(): Promise<GetMusicDriversSetsResponse> {
+		return await this.request(paths.GET_MUSIC_DRIVERS_SETS);
+	}
+
+	/**
+	 * Since firmware version 2.5.6.
+	 */
+	async getCurrentMusicDriverset(): Promise<GetCurrentMusicDriversetResponse> {
+		return await this.request(paths.GET_CURRENT_MUSIC_DRIVERSET);
+	}
+
+	/**
+	 * Grab a url based on the path
+	 */
+	private buildUrl(url: string) {
+		return url.startsWith('http://')
+			? url
+			: `http://${this.globalOptions.ip}${basePath}${url}`;
+	}
+
+	/**
+	 * Make a request to the API automatically injecting the token if needed
+	 * @param {*} url
+	 * @param {*} options
+	 * @returns The data from the successful request
+	 */
+	private async request(url: string, options: RequestInit = {}) {
+		const newUrl = this.buildUrl(url);
+
+		if (!this.tokenData) {
+			this.tokenData = await this.login();
+			await this.request(this.buildUrl(paths.VERIFY), { method: 'POST' });
+		}
+
+		options.headers = options.headers ?? {};
+		Object.assign(options.headers, this.globalOptions?.additionalHeaders ?? {});
+		(options.headers as Record<string, string>)['X-Auth-Token'] =
+			this.tokenData.authentication_token;
+
+		if (typeof options.body === 'object') {
+			options.body = JSON.stringify(options.body);
+		}
+
+		const res = await fetch(newUrl, options);
+		throwIfErr(res);
+		const data = await res.json();
+		return data;
+	}
+}
 
 /**
  * Check if a given response is not OK, and if so throw a
  * detailed exception.
  */
-export async function throwIfErr(response: Response) {
+async function throwIfErr(response: Response) {
 	if (response.ok) {
 		return;
 	}
@@ -1724,31 +1741,4 @@ export class FetchError extends Error {
 	) {
 		super(message);
 	}
-}
-
-/**
- * Make a request to the API automatically injecting the token if needed
- * @param {*} url
- * @param {*} options
- * @returns The data from the successful request
- */
-async function request(url: string, options: RequestInit = {}) {
-	if (!tokenData) {
-		tokenData = await login();
-		await request(paths.VERIFY, { method: 'POST' });
-	}
-
-	options.headers = options.headers ?? {};
-	Object.assign(options.headers, globalOptions?.additionalHeaders ?? {});
-	(options.headers as Record<string, string>)['X-Auth-Token'] =
-		tokenData.authentication_token;
-
-	if (typeof options.body === 'object') {
-		options.body = JSON.stringify(options.body);
-	}
-
-	const res = await fetch(url, options);
-	throwIfErr(res);
-	const data = await res.json();
-	return data;
 }

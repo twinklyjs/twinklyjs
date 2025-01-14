@@ -4,12 +4,12 @@ import os from 'node:os';
 
 const UDP_BROADCAST_PORT = 5555;
 
-interface DiscoverOptions {
+export interface DiscoverOptions {
 	timeout?: number;
 	broadcastAddress?: string;
 }
 
-interface Device {
+export interface Device {
 	ip: string;
 	port: number;
 	deviceId: string;
