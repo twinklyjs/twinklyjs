@@ -4,8 +4,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Argument, Command } from 'commander';
 import envPaths from 'env-paths';
-import * as api from './api.js';
 import { discover } from './discovery.js';
+import { LEDOperationMode, TwinklyClient } from './index.js';
 
 const program = new Command();
 const configDir = envPaths('twinklyjs').config;
@@ -77,80 +77,6 @@ program
 	});
 
 program
-	.command('getmovie')
-	.description('Get the current movie')
-	.option('--ip <ip>', 'The IP address of the Twinkly device')
-	.action(async (options) => {
-		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
-		const movie = await client.getCurrentMovie();
-		console.log(movie);
-	});
-
-program
-	.command('getmovies')
-	.description('Get movies installed.')
-	.option('--ip <ip>', 'The IP address of the Twinkly device')
-	.action(async (options) => {
-		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
-		const movies = await client.getMovies();
-		console.log(movies);
-	});
-
-program
-	.command('setmovie')
-	.description('Set LED color in RGB')
-	.argument('<id>')
-	.option('--ip <ip>', 'The IP address of the Twinkly device')
-	.action(async (id, options) => {
-		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
-		await client.setLEDOperationMode({ mode: api.LEDOperationMode.MOVIE });
-		const result = await client.setCurrentMovie({ id: Number(id) });
-		console.log(result);
-	});
-
-program
-	.command('setcolor')
-	.description('Set LED color in RGB')
-	.argument('<red>')
-	.argument('<green>')
-	.argument('<blue>')
-	.option('--ip <ip>', 'The IP address of the Twinkly device')
-	.action(async (red, green, blue, options) => {
-		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
-		await client.setLEDOperationMode({ mode: api.LEDOperationMode.COLOR });
-		const result = await client.setLEDColor({
-			red: Number(red),
-			green: Number(green),
-			blue: Number(blue),
-		});
-		console.log(result);
-	});
-
-program
-	.command('setopmode')
-	.description('Set the LED operation mode')
-
-	.addArgument(
-		new Argument('<mode>', 'The LED Operation Mode Twinkly is set to.').choices(
-			['off', 'color', 'demo', 'movie', 'rt', 'effect', 'playlist'],
-		),
-	)
-
-	.option('--ip <ip>', 'The IP address of the Twinkly device')
-	.action(async (mode, options) => {
-		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
-		const result = await client.setLEDOperationMode({
-			mode: mode as api.LEDOperationMode,
-		});
-		console.log(result);
-	});
-
-program
 	.command('config <action> [value]')
 	.description('Manage configuration settings')
 	.action(async (action, value) => {
@@ -173,8 +99,81 @@ program
 				console.error('Invalid action. Use "getip" or "setip".');
 		}
 	});
+
 program
-	.command('setbrightness')
+	.command('get-movie')
+	.description('Get the current movie')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (options) => {
+		const ip = await requireIP(options.ip);
+		const client = new TwinklyClient({ ip });
+		const movie = await client.getCurrentMovie();
+		console.log(movie);
+	});
+
+program
+	.command('get-movies')
+	.description('Get movies installed.')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (options) => {
+		const ip = await requireIP(options.ip);
+		const client = new TwinklyClient({ ip });
+		const movies = await client.getMovies();
+		console.log(movies);
+	});
+
+program
+	.command('set-movie')
+	.description('Set LED color in RGB')
+	.argument('<id>')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (id, options) => {
+		const ip = await requireIP(options.ip);
+		const client = new TwinklyClient({ ip });
+		await client.setLEDOperationMode({ mode: LEDOperationMode.MOVIE });
+		const result = await client.setCurrentMovie({ id: Number(id) });
+		console.log(result);
+	});
+
+program
+	.command('set-color')
+	.description('Set LED color in RGB')
+	.argument('<red>')
+	.argument('<green>')
+	.argument('<blue>')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (red, green, blue, options) => {
+		const ip = await requireIP(options.ip);
+		const client = new TwinklyClient({ ip });
+		await client.setLEDOperationMode({ mode: LEDOperationMode.COLOR });
+		const result = await client.setLEDColor({
+			red: Number(red),
+			green: Number(green),
+			blue: Number(blue),
+		});
+		console.log(result);
+	});
+
+program
+	.command('set-op-mode')
+	.description('Set the LED operation mode')
+	.addArgument(
+		new Argument('<mode>', 'The LED Operation Mode Twinkly is set to.').choices(
+			['off', 'color', 'demo', 'movie', 'rt', 'effect', 'playlist'],
+		),
+	)
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (mode, options) => {
+		const ip = await requireIP(options.ip);
+		const client = new TwinklyClient({ ip });
+		const result = await client.setLEDOperationMode({
+			mode: mode as LEDOperationMode,
+		});
+		console.log(result);
+	});
+
+program
+	.command('set-brightness')
 	.description('Send http request for changing brightness.')
 	.addArgument(
 		new Argument('<mode>', 'Enabled or Disabled').choices([
@@ -197,7 +196,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (mode, type, value, options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const response = await client.setLEDBrightness({
 			mode: mode as 'enabled' | 'disabled',
 			type: type as 'A' | 'R',
@@ -205,65 +204,90 @@ program
 		});
 		console.log(response);
 	});
+
 program
-	.command('getbrightness')
+	.command('get-brightness')
 	.description('Get the brightness of the device.')
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const details = await client.getLEDBrightness();
 		console.log(details);
 	});
 
 program
-	.command('getopmode')
+	.command('get-op-mode')
 	.description('Get the current LED operation mode of the device.')
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const details = await client.getLEDOperationMode();
 		console.log(details);
 	});
 
 program
-	.command('getcolor')
+	.command('get-color')
 	.description('Get the color of the device.')
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const details = await client.getLEDColor();
 		console.log(details);
 	});
 
 program
-	.command('getdetails')
+	.command('get-details')
 	.description('Get the details of the device.')
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const details = await client.getDeviceDetails();
 		console.log(details);
 	});
 
 program
-	.command('gettimer')
+	.command('get-device-name')
+	.description('Get the name of the device.')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.action(async (options) => {
+		const ip = await requireIP(options.ip);
+		const client = new TwinklyClient({ ip });
+		const details = await client.getDeviceName();
+		console.log(details);
+	});
+
+program
+	.command('set-device-name')
+	.description('Set the name of the device.')
+	.option('--ip <ip>', 'The IP address of the Twinkly device')
+	.addArgument(new Argument('<name>', 'The name of the device.'))
+	.action(async (name, options) => {
+		const ip = await requireIP(options.ip);
+		const client = new TwinklyClient({ ip });
+		await client.setDeviceName({ name });
+		console.log('Device name set.');
+	});
+
+program
+	.command('get-timer')
 	.description('Get the timer set for the device.')
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const timer = await client.getTimer();
 
 		console.log(
 			`Time on: ${Math.floor(timer.time_on / 3600)}:${Math.floor((timer.time_on % 3600) / 60)} Time off: ${Math.floor(timer.time_off / 3600)}:${Math.floor((timer.time_off % 3600) / 60)} `,
 		);
 	});
+
 program
-	.command('settimer')
+	.command('set-timer')
 	.description('Send http request for setting timer.')
 	.argument(
 		'<TimeOn>',
@@ -276,7 +300,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (TimeOn, TimeOff, options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const Now = new Date();
 		const hours = Now.getHours();
 		const minutes = Now.getMinutes();

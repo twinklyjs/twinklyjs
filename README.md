@@ -30,25 +30,27 @@ Usage: twinkly [options] [command]
 CLI tool for managing Twinkly smart lights
 
 Options:
-  -V, --version                            output the version number
-  -h, --help                               display help for command
+  -V, --version                                   output the version number
+  -h, --help                                      display help for command
 
 Commands:
-  discover [options]                             Discover Twinkly devices on the network.
-  getmovie [options]                             Get the current movie
-  getmovies [options]                            Get movies installed.
-  setmovie [options] <id>                        Set LED color in RGB
-  setcolor [options] <red> <green> <blue>        Set LED color in RGB
-  setopmode [options] <mode>                     Set the LED operation mode
-  config <action> [value]                        Manage configuration settings
-  setbrightness [options] <mode> <type> <value>  Send http request for changing brightness.
-  getbrightness [options]                        Get the brightness of the device.
-  getopmode [options]                            Get the current LED operation mode of the device.
-  getcolor [options]                             Get the color of the device.
-  getdetails [options]                           Get the details of the device.
-  gettimer [options]                             Get the timer set for the device.
-  settimer [options] <TimeOn> <TimeOff>          Send http request for setting timer.
-  help [command]                                 display help for command
+  discover [options]                              Discover Twinkly devices on the network.
+  config <action> [value]                         Manage configuration settings
+  get-movie [options]                             Get the current movie
+  get-movies [options]                            Get movies installed.
+  set-movie [options] <id>                        Set LED color in RGB
+  set-color [options] <red> <green> <blue>        Set LED color in RGB
+  set-op-mode [options] <mode>                    Set the LED operation mode
+  set-brightness [options] <mode> <type> <value>  Send http request for changing brightness.
+  get-brightness [options]                        Get the brightness of the device.
+  get-op-mode [options]                           Get the current LED operation mode of the device.
+  get-color [options]                             Get the color of the device.
+  get-details [options]                           Get the details of the device.
+  get-device-name [options]                       Get the name of the device.
+  set-device-name [options] <name>                Set the name of the device.
+  get-timer [options]                             Get the timer set for the device.
+  set-timer [options] <TimeOn> <TimeOff>          Send http request for setting timer.
+  help [command]                                  display help for command
 ```
 
 ## API Usage
@@ -56,9 +58,9 @@ Commands:
 twinklyjs is also available as a library. Most operations are available on the `api` object, which supports basic HTTP calls.  Authentication is automatically handled.
 
 ```js
-import {api} from '@twinklyjs/twinkly';
+import {TwinklyClient} from '@twinklyjs/twinkly';
 
-const client = new api.TwinklyClient({ip: '10.0.0.187'});
+const client = new TwinklyClient({ip: '10.0.0.187'});
 const details = await client.getDeviceDetails();
 console.log(details);
 
@@ -73,9 +75,9 @@ console.log(data);
 Twinkly supports device discovery via UDP broadcasting. This is available in a slightly easier to use form:
 
 ```js
-import {discovery} from '@twinklyjs/twinkly';
+import {discover} from '@twinklyjs/twinkly';
 
-const devices = await discovery.discover();
+const devices = await discover();
 console.log(devices);
 ```
 

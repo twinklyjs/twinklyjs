@@ -23,7 +23,7 @@ export interface LightNode {
 }
 
 /**
- *
+ * Send a frame to the device via UDP
  * @param ip IP address of the device to send the frame
  * @param token Pre-fetched authentication token
  * @param nodes {r, g, b} array of light nodes
@@ -40,7 +40,6 @@ export async function sendFrame(ip: string, token: string, nodes: LightNode[]) {
 		];
 		for (let i = 12; i < 900 && light < nodes.length; i += 3) {
 			const node = nodes[light];
-			console.log(light, node);
 			messageParts.push(Buffer.from([node.r, node.g, node.b]));
 			light++;
 		}
@@ -56,4 +55,5 @@ export async function sendFrame(ip: string, token: string, nodes: LightNode[]) {
 		});
 		frame++;
 	}
+	socket.close();
 }
