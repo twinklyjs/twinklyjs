@@ -4,8 +4,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Argument, Command } from 'commander';
 import envPaths from 'env-paths';
-import * as api from './api.js';
 import { discover } from './discovery.js';
+import { LEDOperationMode, TwinklyClient } from './index.js';
 
 const program = new Command();
 const configDir = envPaths('twinklyjs').config;
@@ -82,7 +82,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const movie = await client.getCurrentMovie();
 		console.log(movie);
 	});
@@ -93,7 +93,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const movies = await client.getMovies();
 		console.log(movies);
 	});
@@ -105,8 +105,8 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (id, options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
-		await client.setLEDOperationMode({ mode: api.LEDOperationMode.MOVIE });
+		const client = new TwinklyClient({ ip });
+		await client.setLEDOperationMode({ mode: LEDOperationMode.MOVIE });
 		const result = await client.setCurrentMovie({ id: Number(id) });
 		console.log(result);
 	});
@@ -120,8 +120,8 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (red, green, blue, options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
-		await client.setLEDOperationMode({ mode: api.LEDOperationMode.COLOR });
+		const client = new TwinklyClient({ ip });
+		await client.setLEDOperationMode({ mode: LEDOperationMode.COLOR });
 		const result = await client.setLEDColor({
 			red: Number(red),
 			green: Number(green),
@@ -143,9 +143,9 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (mode, options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const result = await client.setLEDOperationMode({
-			mode: mode as api.LEDOperationMode,
+			mode: mode as LEDOperationMode,
 		});
 		console.log(result);
 	});
@@ -197,7 +197,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (mode, type, value, options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const response = await client.setLEDBrightness({
 			mode: mode as 'enabled' | 'disabled',
 			type: type as 'A' | 'R',
@@ -211,7 +211,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const details = await client.getLEDBrightness();
 		console.log(details);
 	});
@@ -222,7 +222,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const details = await client.getLEDOperationMode();
 		console.log(details);
 	});
@@ -233,7 +233,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const details = await client.getLEDColor();
 		console.log(details);
 	});
@@ -244,7 +244,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const details = await client.getDeviceDetails();
 		console.log(details);
 	});
@@ -255,7 +255,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const timer = await client.getTimer();
 
 		console.log(
@@ -276,7 +276,7 @@ program
 	.option('--ip <ip>', 'The IP address of the Twinkly device')
 	.action(async (TimeOn, TimeOff, options) => {
 		const ip = await requireIP(options.ip);
-		const client = new api.TwinklyClient({ ip });
+		const client = new TwinklyClient({ ip });
 		const Now = new Date();
 		const hours = Now.getHours();
 		const minutes = Now.getMinutes();

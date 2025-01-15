@@ -56,9 +56,9 @@ Commands:
 twinklyjs is also available as a library. Most operations are available on the `api` object, which supports basic HTTP calls.  Authentication is automatically handled.
 
 ```js
-import {api} from '@twinklyjs/twinkly';
+import {TwinklyClient} from '@twinklyjs/twinkly';
 
-const client = new api.TwinklyClient({ip: '10.0.0.187'});
+const client = new TwinklyClient({ip: '10.0.0.187'});
 const details = await client.getDeviceDetails();
 console.log(details);
 
@@ -73,9 +73,9 @@ console.log(data);
 Twinkly supports device discovery via UDP broadcasting. This is available in a slightly easier to use form:
 
 ```js
-import {discovery} from '@twinklyjs/twinkly';
+import {discover} from '@twinklyjs/twinkly';
 
-const devices = await discovery.discover();
+const devices = await discover();
 console.log(devices);
 ```
 
