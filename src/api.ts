@@ -1730,16 +1730,7 @@ async function throwIfErr(response: Response) {
 	if (response.ok) {
 		return;
 	}
-	let errorText = `Error fetching ${response.url}: ${response.status} ${response.statusText}`;
-	try {
-		const error = await response.text();
-		console.log(`errr: ${error}`);
-		if (error) {
-			errorText = `${errorText} \n\n ${error}`;
-		}
-	} catch (e) {
-		console.error(`ehhhhh: ${e}`);
-	}
+	const errorText = `Error fetching ${response.url}: ${response.status} ${response.statusText}`;
 	throw new FetchError(errorText, response);
 }
 
