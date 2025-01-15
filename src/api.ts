@@ -1546,7 +1546,7 @@ export class TwinklyClient {
 	/**
 	 * Since firmware version 1.99.18.
 	 */
-	async InitiateWiFiNetworkScan(): Promise<CodeResponse> {
+	async initiateWiFiNetworkScan(): Promise<CodeResponse> {
 		return await this.request(paths.INITIATE_WIFI_NETWORK_SCAN);
 	}
 
@@ -1730,7 +1730,16 @@ async function throwIfErr(response: Response) {
 	if (response.ok) {
 		return;
 	}
-	const errorText = `Error fetching ${response.url}: ${response.status} ${response.statusText}`;
+	let errorText = `Error fetching ${response.url}: ${response.status} ${response.statusText}`;
+	try {
+		const error = await response.text();
+		console.log(`errr: ${error}`);
+		if (error) {
+			errorText = `${errorText} \n\n ${error}`;
+		}
+	} catch (e) {
+		console.error(`ehhhhh: ${e}`);
+	}
 	throw new FetchError(errorText, response);
 }
 

@@ -23,7 +23,7 @@ export interface LightNode {
 }
 
 /**
- *
+ * Send a frame to the device via UDP
  * @param ip IP address of the device to send the frame
  * @param token Pre-fetched authentication token
  * @param nodes {r, g, b} array of light nodes
