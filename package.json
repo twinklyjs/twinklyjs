@@ -30,7 +30,7 @@
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.0.0",
     "@types/node": "^22.10.2",
     "esbuild": "^0.25.0",
     "execa": "^9.5.2",
