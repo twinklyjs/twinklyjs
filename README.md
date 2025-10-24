@@ -1,5 +1,7 @@
 # twinklyjs
 
+![Twinkly](https://raw.githubusercontent.com/justinbeckwith/twinklyjs/main/site/twinkly.webp)
+
 This is an unofficial TypeScript implementation for [Twinkly Lights](https://twinkly.com/).  Everything here is based on the excellent work at <https://xled-docs.readthedocs.io/en/latest/>.  
 
 ## CLI usage
