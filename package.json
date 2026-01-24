@@ -40,6 +40,6 @@
   },
   "dependencies": {
     "commander": "^14.0.0",
-    "env-paths": "^3.0.0"
+    "env-paths": "^4.0.0"
   }
 }
