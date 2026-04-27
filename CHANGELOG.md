@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.7](https://github.com/twinklyjs/twinklyjs/compare/twinkly-v0.0.6...twinkly-v0.0.7) (2026-04-27)
+
+
+### Bug Fixes
+
+* clean up README typos ([#81](https://github.com/twinklyjs/twinklyjs/issues/81)) ([b156cd2](https://github.com/twinklyjs/twinklyjs/commit/b156cd23a3ada10e59489908cee01be5f28ccce6))
+
 ## [0.0.6](https://github.com/twinklyjs/twinklyjs/compare/twinkly-v0.0.5...twinkly-v0.0.6) (2026-04-27)
 
 
