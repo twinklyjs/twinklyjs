@@ -38,7 +38,7 @@ export async function sendFrame(ip: string, token: string, nodes: LightNode[]) {
 			Buffer.from(token, 'base64'),
 			Buffer.from([0x00, 0x00, frame]),
 		];
-		for (let i = 12; i < 900 && light < nodes.length; i += 3) {
+		for (let i = 0; i < 900 && light < nodes.length; i += 3) {
 			const node = nodes[light];
 			messageParts.push(Buffer.from([node.r, node.g, node.b]));
 			light++;
