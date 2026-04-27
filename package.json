@@ -29,6 +29,10 @@
   "keywords": [],
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/twinklyjs/twinklyjs"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.2.3",
     "@types/node": "^24.0.0",
