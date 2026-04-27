@@ -1,0 +1,9 @@
+{
+  "bootstrap-sha": "c3fc0f6e97a77ca7334980903741fbcb6330a168",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "@twinklyjs/twinkly"
+    }
+  }
+}
