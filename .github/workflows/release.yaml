@@ -36,7 +36,19 @@ jobs:
           node-version: 24
           registry-url: 'https://registry.npmjs.org'
           scope: '@twinklyjs'
+      - id: package-version
+        run: echo "version=$(npm pkg get version | tr -d '\"')" >> "$GITHUB_OUTPUT"
+      - id: npm-check
+        run: |
+          if npm view "@twinklyjs/twinkly@${{ steps.package-version.outputs.version }}" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "Version ${{ steps.package-version.outputs.version }} is already published to npm; skipping publish."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
       - run: npm ci
+        if: ${{ steps.npm-check.outputs.published != 'true' }}
       - run: npm publish --access public --provenance
+        if: ${{ steps.npm-check.outputs.published != 'true' }}
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
