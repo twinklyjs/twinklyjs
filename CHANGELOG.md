@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.8](https://github.com/twinklyjs/twinklyjs/compare/twinkly-v0.0.7...twinkly-v0.0.8) (2026-04-27)
+
+
+### Bug Fixes
+
+* add repository metadata ([#84](https://github.com/twinklyjs/twinklyjs/issues/84)) ([e68ca5f](https://github.com/twinklyjs/twinklyjs/commit/e68ca5fe8fe912cbb93501ebaff6043cf8120bd8))
+
 ## [0.0.7](https://github.com/twinklyjs/twinklyjs/compare/twinkly-v0.0.6...twinkly-v0.0.7) (2026-04-27)
 
 
