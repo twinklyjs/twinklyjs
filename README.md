@@ -98,15 +98,14 @@ There are a few examples of API usage available in `/examples`.
 
 | Example | Description |
 |--|---|
-| [realtime](./examples/realtime.js) | Use the realtime UPD API to send light frames |
-|-|-|
+| [realtime](./examples/realtime.js) | Use the realtime UDP API to send light frames |
 
 ## Contributing
 
 This module currently only implements a subset of the available API.  We love contributions!  Feel free to open a PR, and reference the underlying part of the API you're trying to support.  See [CONTRIBUTING](CONTRIBUTING.md) to learn more.
 
 Want to join in on the discussion?
-visit our discord: <https://discord.gg/AtA98tr2ab>
+Visit our Discord: <https://discord.gg/AtA98tr2ab>
 
 ## Security
 
