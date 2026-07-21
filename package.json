@@ -1,6 +1,6 @@
 {
   "name": "@twinklyjs/twinkly",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "A Twinkly API client",
   "types": "./build/src/index.d.ts",
   "type": "module",

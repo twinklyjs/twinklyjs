@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.9](https://github.com/twinklyjs/twinklyjs/compare/twinkly-v0.0.8...twinkly-v0.0.9) (2026-07-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency commander to v15 ([#90](https://github.com/twinklyjs/twinklyjs/issues/90)) ([c2be97a](https://github.com/twinklyjs/twinklyjs/commit/c2be97a677b7404d580856f6f4c4874e9fbcc813))
+
 ## [0.0.8](https://github.com/twinklyjs/twinklyjs/compare/twinkly-v0.0.7...twinkly-v0.0.8) (2026-04-27)
 
 
